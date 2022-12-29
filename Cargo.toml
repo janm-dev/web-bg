@@ -1,0 +1,57 @@
+[package]
+name = "web-bg"
+version = "0.1.0"
+edition = "2021"
+publish = false
+authors = ["janm-dev"]
+description = "Interactive website backgrounds in Rust with Bevy."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/janm-dev/web-bg"
+
+[features]
+default = [
+	"asteroids",
+	"maze",
+	"portoom",
+	"racecar",
+	"lander",
+	"astroguessr",
+	"mapman",
+]
+debug = []
+asteroids = []
+maze = []
+portoom = []
+racecar = []
+lander = []
+astroguessr = []
+mapman = []
+
+[dependencies]
+bevy = "0.9.1"
+bevy_embedded_assets = "0.6.1"
+rand = "0.8.5"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.7"
+
+[profile.dev]
+lto = false
+incremental = true
+debug = true
+opt-level = 0
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+lto = "fat"
+incremental = false
+codegen-units = 1
+strip = true
+debug = false
+opt-level = 3
+
+[profile.release-wasm]
+inherits = "release"
+opt-level = "z"
