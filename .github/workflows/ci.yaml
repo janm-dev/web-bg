@@ -15,7 +15,7 @@ jobs:
         with:
           toolchain: stable
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo check --profile release-wasm --target wasm32-unknown-unknown
 
   fmt:
@@ -28,7 +28,7 @@ jobs:
           toolchain: nightly
           components: rustfmt
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly fmt --all -- --check
 
   clippy:
@@ -41,5 +41,5 @@ jobs:
           toolchain: nightly
           components: clippy
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly clippy --profile release-wasm --target wasm32-unknown-unknown -- --D warnings

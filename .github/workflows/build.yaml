@@ -1,0 +1,44 @@
+name: Build and Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "build"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/configure-pages@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: jetli/wasm-bindgen-action@v0.2.0
+      - run: |
+          mkdir web
+          cargo build --profile release-wasm --target wasm32-unknown-unknown
+          wasm-bindgen --out-name web --out-dir target/wasm --target web target/wasm32-unknown-unknown/release-wasm/web-bg.wasm
+          npx --package=binaryen -- wasm-opt -Oz --output web/web_bg.wasm target/wasm/web_bg.wasm
+          cp target/wasm/web.js web/background.js
+          cp index.html web/index.html
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./web
+      - id: deployment
+        uses: actions/deploy-pages@v1

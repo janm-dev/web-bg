@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>web-bg debug page</title>
+		<style>
+			html,
+			body {
+				background-color: #060612;
+				margin: 0;
+				padding: 0;
+				color: #ffffff;
+				font-family: sans-serif;
+				font-size: 24px;
+				line-height: 1.5;
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+					Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+			}
+
+			main {
+				margin: 0;
+				padding: 5rem 10rem;
+			}
+
+			a {
+				color: #0066ff;
+			}
+
+			code {
+				background-color: #15152a;
+				border-radius: 0.5rem;
+				padding: 0.1rem 0.35rem;
+			}
+
+			#background {
+				margin: 0;
+				padding: 0;
+				width: 100% !important;
+				height: 100% !important;
+				opacity: 0;
+				position: fixed;
+				transition: all 2.5s;
+			}
+		</style>
+
+		<script type="module">
+			const onload = (o) => {
+				console.debug(o);
+				o.main();
+
+				const canvas = document.getElementById("background");
+				canvas.style.opacity = "1";
+				canvas.focus();
+			};
+
+			try {
+				// Run the background minigames (debug build)
+				import("./target/wasm-debug/web-bg.js").then((m) => {
+					m.default().then(onload);
+				});
+			} catch (e) {
+				console.warn(`Couldn't load debug build of web-bg: ${e}`);
+
+				try {
+					// Run the background minigames (release build, only if debug build didn't load)
+					import("./target/wasm/web-bg.js").then((m) => {
+						m.default().then(onload);
+					});
+				} catch (e) {
+					console.error(`Couldn't load web-bg: ${e}`);
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<canvas id="background" alt>
+			Your browser does not support the canvas element. Please use a newer
+			browser.
+		</canvas>
+
+		<main>
+			<h1><code>web-bg</code> example</h1>
+			<p>
+				This is an example website showing
+				<a href="https://github.com/janm-dev/web-bg"><code>web-bg</code></a
+				>.
+			</p>
+			<p>
+				Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+				tempor incididunt ut labore et dolore magna aliqua. Tellus at urna
+				condimentum mattis. Ut pharetra sit amet aliquam id. Sit amet cursus sit
+				amet dictum. Egestas maecenas pharetra convallis posuere morbi. Varius
+				vel pharetra vel turpis nunc eget. Quam lacus suspendisse faucibus
+				interdum posuere. In hac habitasse platea dictumst vestibulum rhoncus
+				est pellentesque. Cursus sit amet dictum sit. Facilisi nullam vehicula
+				ipsum a arcu. Eu tincidunt tortor aliquam nulla facilisi cras fermentum.
+				Mauris in aliquam sem fringilla ut morbi. Habitasse platea dictumst
+				vestibulum rhoncus. At varius vel pharetra vel turpis nunc eget lorem.
+				Tristique senectus et netus et malesuada.
+			</p>
+			<p>
+				Leo integer malesuada nunc vel. Fames ac turpis egestas maecenas. Dis
+				parturient montes nascetur ridiculus mus mauris. Mauris rhoncus aenean
+				vel elit scelerisque mauris pellentesque pulvinar pellentesque. Sed
+				vulputate odio ut enim blandit volutpat. Eget dolor morbi non arcu risus
+				quis varius. Suspendisse faucibus interdum posuere lorem. Mattis rhoncus
+				urna neque viverra justo nec ultrices dui. Dui vivamus arcu felis
+				bibendum ut tristique. Morbi enim nunc faucibus a pellentesque. Maecenas
+				sed enim ut sem viverra aliquet eget. Massa sed elementum tempus egestas
+				sed sed risus pretium quam. Lectus magna fringilla urna porttitor
+				rhoncus dolor purus non. Cursus euismod quis viverra nibh.
+			</p>
+			<p>
+				Etiam sit amet nisl purus in mollis nunc sed. Bibendum ut tristique et
+				egestas quis. Semper eget duis at tellus. In pellentesque massa placerat
+				duis ultricies lacus sed. Amet dictum sit amet justo donec enim diam.
+				Turpis egestas maecenas pharetra convallis posuere. Posuere ac ut
+				consequat semper viverra nam libero. Dictum varius duis at consectetur
+				lorem donec massa sapien faucibus. Et pharetra pharetra massa massa.
+				Molestie at elementum eu facilisis sed odio morbi quis. Donec ac odio
+				tempor orci dapibus ultrices. Aliquam faucibus purus in massa tempor nec
+				feugiat. Amet mattis vulputate enim nulla aliquet. Ultricies mi quis
+				hendrerit dolor magna. Ut ornare lectus sit amet est.
+			</p>
+			<p>
+				Porttitor rhoncus dolor purus non enim. Diam donec adipiscing tristique
+				risus nec feugiat in fermentum posuere. Pulvinar proin gravida hendrerit
+				lectus a. Est pellentesque elit ullamcorper dignissim cras tincidunt
+				lobortis. Neque vitae tempus quam pellentesque nec nam. Vestibulum morbi
+				blandit cursus risus at. Nullam ac tortor vitae purus faucibus ornare
+				suspendisse sed nisi. Fames ac turpis egestas integer eget aliquet nibh
+				praesent tristique. Urna cursus eget nunc scelerisque. At tempor commodo
+				ullamcorper a lacus vestibulum sed. Feugiat in ante metus dictum at
+				tempor commodo. In pellentesque massa placerat duis ultricies lacus sed
+				turpis. Proin fermentum leo vel orci porta non pulvinar neque laoreet.
+			</p>
+			<p>
+				Lorem dolor sed viverra ipsum nunc aliquet. Nunc aliquet bibendum enim
+				facilisis gravida. Lorem ipsum dolor sit amet consectetur. Interdum
+				velit euismod in pellentesque massa. Etiam sit amet nisl purus in mollis
+				nunc. Ut placerat orci nulla pellentesque dignissim enim sit amet.
+				Tincidunt lobortis feugiat vivamus at augue. Porttitor lacus luctus
+				accumsan tortor posuere ac. Odio euismod lacinia at quis risus sed
+				vulputate odio. Diam in arcu cursus euismod quis viverra. Nunc
+				scelerisque viverra mauris in aliquam sem. Vulputate odio ut enim
+				blandit volutpat maecenas volutpat. Dolor magna eget est lorem ipsum
+				dolor sit amet. Id velit ut tortor pretium. Et tortor consequat id porta
+				nibh. Placerat in egestas erat imperdiet sed euismod nisi. Ante in nibh
+				mauris cursus mattis molestie a. Et netus et malesuada fames ac turpis
+				egestas. Odio morbi quis commodo odio aenean sed. Nulla aliquet
+				porttitor lacus luctus accumsan tortor.
+			</p>
+		</main>
+	</body>
+</html>
