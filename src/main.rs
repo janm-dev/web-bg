@@ -101,7 +101,10 @@ fn start_app() -> App {
 /// Common setup for all minigames
 fn setup(mut windows: ResMut<Windows>) {
 	let window = windows.primary_mut();
+	#[cfg(not(target_arch = "wasm32"))]
 	window.set_title("web-bg".to_string());
+	#[cfg(target_arch = "wasm32")]
+	window.set_title(String::new());
 	window.set_maximized(true);
 	window.set_resizable(true);
 }
