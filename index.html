@@ -45,13 +45,15 @@
 		</style>
 
 		<script type="module" async referrerpolicy="no-referrer">
-			// Import and run the background games
-			import init from "./background.js";
-
-			init().then((o) => {
-				o.main();
-				document.getElementById("background").style.opacity = "1";
-			});
+			// Import and run the background games when the website loads
+			window.addEventListener("DOMContentLoaded", () =>
+				import("./background.js")
+					.default()
+					.then((o) => {
+						o.main();
+						document.getElementById("background").style.opacity = "1";
+					})
+			);
 		</script>
 	</head>
 	<body>
