@@ -28,7 +28,7 @@ astroguessr = []
 mapman = []
 
 [dependencies]
-bevy = "0.9.1"
+bevy = "0.10.0"
 bevy_embedded_assets = "0.6.2"
 rand = "0.8.5"
 
