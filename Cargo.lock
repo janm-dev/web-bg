@@ -362,9 +362,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_embedded_assets"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f76e3571802a8ed41e29a6e66f908c76d4e13545442e94cf576180503059e69"
+checksum = "753912be046efce13ab420ea59615ac06d9167044a5ed68bead88656e730f00d"
 dependencies = [
  "bevy",
  "cargo-emit",
