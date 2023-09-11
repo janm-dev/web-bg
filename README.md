@@ -6,11 +6,11 @@ Try it out locally with `cargo run` or see below for more info.
 
 ## Building
 
-To build and run `web-bg` as a regular application for local testing, run [`cargo run --features debug`](https://doc.rust-lang.org/cargo/commands/cargo-run.html). Note that while the first compilation will take a few minutes, subsequent builds should only take a few seconds.
+To build and run `web-bg` as a regular application for local testing, run [`cargo run --features debug`](https://doc.rust-lang.org/cargo/commands/cargo-run.html). Note that while the first compilation will take a few minutes, subsequent builds should be much faster.
 
-To build `web-bg` as a regular application, run [`cargo build --release`](https://doc.rust-lang.org/cargo/commands/cargo-build.html). The compiled binary will be located in `./target/release/web-bg{.exe}`. This build takes a few minutes, and is not recommended for debugging/testing/development.
+To build `web-bg` as a regular application, run [`cargo build --release`](https://doc.rust-lang.org/cargo/commands/cargo-build.html). The compiled binary will be located in `./target/release/web-bg[.exe]`. This build takes a few minutes, and is not recommended for debugging/testing/development.
 
-To build `web-bg` for the web for testing or debugging (without many optimizations), run [`cargo build --target wasm32-unknown-unknown --features debug`](https://doc.rust-lang.org/cargo/commands/cargo-build.html) followed by [`wasm-bindgen --out-name web-bg --out-dir target/wasm-debug --target web target/wasm32-unknown-unknown/debug/web-bg.wasm`](https://github.com/rustwasm/wasm-bindgen). The compiled files will be located in `./target/wasm-debug/`. Note that while the first compilation will take a few minutes (because dependencies *do* get optimized), subsequent builds should only take a few seconds (as long as the dependencies stay the same and only `web-bg`'s code is changed).
+To build `web-bg` for the web for testing or debugging (without many optimizations), run [`cargo build --target wasm32-unknown-unknown`](https://doc.rust-lang.org/cargo/commands/cargo-build.html) followed by [`wasm-bindgen --out-name web-bg --out-dir target/wasm-debug --target web target/wasm32-unknown-unknown/debug/web-bg.wasm`](https://github.com/rustwasm/wasm-bindgen). The compiled files will be located in `./target/wasm-debug/`. Note that while the first compilation will take a few minutes (because dependencies *do* get optimized), subsequent builds should only take a few seconds (as long as the dependencies stay the same and only `web-bg`'s code is changed).
 
 To build `web-bg` for release on the web, with full optimizations, run [`cargo build --profile release-wasm --target wasm32-unknown-unknown`](https://doc.rust-lang.org/cargo/commands/cargo-build.html) followed by [`wasm-bindgen --out-name web-bg --out-dir target/wasm --target web target/wasm32-unknown-unknown/release-wasm/web-bg.wasm`](https://github.com/rustwasm/wasm-bindgen) and optionally [`wasm-opt -Oz --output target/wasm/web-bg.opt.wasm target/wasm/web-bg_bg.wasm`](https://github.com/WebAssembly/binaryen) then rename `target/wasm/web-bg.opt.wasm` to `target/wasm/web-bg_bg.wasm`. This build takes a few minutes, and is not recommended for debugging/testing/development.
 
@@ -54,6 +54,4 @@ at your option.
 
 ## Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in `web-bg` by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in `web-bg` by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.

@@ -2,10 +2,4 @@
 
 use bevy::prelude::*;
 
-pub fn systems() -> SystemSet {
-	SystemSet::new().label("asteroids systems")
-}
-
-pub fn startup_systems() -> SystemSet {
-	SystemSet::new().label("asteroids startup systems")
-}
+pub fn start(app: &mut App) {}

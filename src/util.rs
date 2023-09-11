@@ -1,7 +1,5 @@
 //! `web-bg` utilities and other miscellaneous things.
 
-use bevy::prelude::*;
-
 /// Quickly declare minigames
 ///
 /// Only use this macro once. It creates a const called `GAMES` with a name and
@@ -14,9 +12,14 @@ macro_rules! games {
 			#[cfg(feature = $feat)] mod $name;
 		)*
 
-		const GAMES: &[(&str, $crate::util::SystemsFn, $crate::util::SystemsFn)] = &[
+		struct Game {
+			name: &'static str,
+			start: fn(&mut bevy::app::App)
+		}
+
+		const GAMES: &[Game] = &[
 			$(
-				#[cfg(feature = $feat)] ($feat, $name::startup_systems, $name::systems),
+				#[cfg(feature = $feat)] Game { name: $feat, start: $name::start },
 			)*
 		];
 
@@ -26,6 +29,3 @@ macro_rules! games {
 		compile_error!("At least one minigame must be enabled");
 	}
 }
-
-/// A pointer to a function that gives you systems
-pub type SystemsFn = fn() -> SystemSet;
