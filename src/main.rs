@@ -4,6 +4,7 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_pass_by_value)] // A bunch of Bevy things require this
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::tabs_in_doc_comments)]
 
 pub mod util;
 
@@ -16,12 +17,14 @@ use bevy::{
 	log::Level,
 	window::close_on_esc,
 };
+#[cfg(feature = "debug")]
+use bevy_debug_text_overlay::OverlayPlugin;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use rand::seq::SliceRandom;
 
 games! {
-	"asteroids" => asteroids,
-	// "maze" => maze,
+	"maze" => maze,
+	// "asteroids" => asteroids,
 	// "portoom" => portoom,
 	// "racecar" => racecar,
 	// "lander" => lander,
@@ -32,6 +35,9 @@ games! {
 #[bevy_main]
 #[allow(clippy::missing_panics_doc)]
 pub fn main() {
+	#[cfg(feature = "debug")]
+	util::init_startup_measurement();
+
 	#[cfg(target_arch = "wasm32")]
 	console_error_panic_hook::set_once();
 
@@ -83,8 +89,13 @@ pub fn main() {
 			},
 			LogDiagnosticsPlugin::default(),
 			FrameTimeDiagnosticsPlugin,
+			OverlayPlugin {
+				font_size: 16.0,
+				..default()
+			},
 		));
-		app.add_systems(Update, close_on_esc);
+		app.add_systems(Startup, util::initial_startup_measurement);
+		app.add_systems(Update, (close_on_esc, util::full_startup_measurement));
 	}
 
 	(game.start)(&mut app);
