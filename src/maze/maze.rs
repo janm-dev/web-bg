@@ -6,6 +6,8 @@ use rand::{
 	seq::{IteratorRandom, SliceRandom},
 	Rng, SeedableRng,
 };
+#[cfg(feature = "profile")]
+use tracing::instrument;
 
 pub const MAZE_SIZE: UVec2 = UVec2::splat(128);
 pub const MAZE_ROOMS: usize = 128;
@@ -128,6 +130,7 @@ fn next_cave(pos: UVec2, visited: &[UVec2], rng: &mut impl Rng) -> Option<(UVec2
 /// The type of `next_maze` and `next_cave`, where `R` is a `rand::Rng`
 type NextFn<R> = fn(UVec2, &[UVec2], &mut R) -> Option<(UVec2, Direction)>;
 
+#[cfg_attr(feature = "profile", instrument(skip(rng), fields(kind)))]
 fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	let us = |u32: u32| -> usize { u32.try_into().unwrap() };
 	let idx = |UVec2 { x, y }| usize::try_from(y * MAZE_SIZE.x + x).unwrap();
@@ -139,8 +142,12 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	let mut route = vec![pos];
 
 	let (next, rooms): (NextFn<R>, usize) = if rng.gen_bool(0.75) {
+		#[cfg(feature = "profile")]
+		tracing::Span::current().record("kind", "maze");
 		(next_maze, MAZE_ROOMS)
 	} else {
+		#[cfg(feature = "profile")]
+		tracing::Span::current().record("kind", "cave");
 		(next_cave, 0)
 	};
 

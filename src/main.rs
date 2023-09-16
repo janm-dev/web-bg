@@ -23,13 +23,13 @@ use bevy_embedded_assets::EmbeddedAssetPlugin;
 use rand::seq::SliceRandom;
 
 games! {
-	"maze" => maze,
 	// "asteroids" => asteroids,
+	// "lander" => lander,
+	// "mapgen" => mapgen,
+	// "mapman" => mapman,
+	"maze" => maze,
 	// "portoom" => portoom,
 	// "racecar" => racecar,
-	// "lander" => lander,
-	// "astroguessr" => astroguessr,
-	// "mapman" => mapman,
 }
 
 #[bevy_main]

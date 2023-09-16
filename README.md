@@ -27,13 +27,12 @@ Each minigame has one [Cargo feature](https://doc.rust-lang.org/cargo/reference/
 |       Title |       Feature | Done? | Description |
 | ----------- | ------------- | ----- | ----------- |
 |   Asteroids |   `asteroids` |    No | An *[Asteroids](https://en.wikipedia.org/wiki/Asteroids_(video_game))*-inspired space flying game. |
-|   Maze Cave |        `maze` |    No | A randomly generated maze/cave. |
+|      Lander |      `lander` |    No | A 2.5D/2D moon landing simulator in the [Lunar Lander](https://en.wikipedia.org/wiki/Lunar_Lander_(video_game_genre)) genre, inspired by [XKCD 2712 - *Gravity*](https://xkcd.com/2712/). |
 |      Mapgen |      `mapgen` |    No | [Wavefunction collapse](https://robertheaton.com/2018/12/17/wavefunction-collapse-algorithm/)-based [Carcassonne](https://en.wikipedia.org/wiki/Carcassonne_(board_game))-esque map generator. |
+|     MAP-MAN |      `mapman` |    No | A 2.5D *[PAC-MAN](https://en.wikipedia.org/wiki/Pac-Man)*-based game played on a real-world map, similar to [Google Maps' 2015 and 2017 April Fool's jokes](https://pacman.fandom.com/wiki/Google_Maps_Pac-Man), but with 3D buildings. |
+|   Maze Cave |        `maze` |  Some | A randomly generated maze/cave. |
 |     Portoom |     `portoom` |    No | A *[Doom](https://en.wikipedia.org/wiki/Doom_(1993_video_game))*-style, *[Portal](https://en.wikipedia.org/wiki/Portal_(video_game))*-inspired first-person shooter. |
 |     Racecar |     `racecar` |    No | A 2D multiplayer [slot car racing](https://en.wikipedia.org/wiki/Slot_car_racing) game. Real multiplayer support (playing against other people) coming soon. |
-|      Lander |      `lander` |    No | A 2.5D/2D moon landing simulator in the [Lunar Lander](https://en.wikipedia.org/wiki/Lunar_Lander_(video_game_genre)) genre, inspired by [XKCD 2712 - *Gravity*](https://xkcd.com/2712/). |
-| Astroguessr | `astroguessr` |    No | A space-based version of *[Geoguessr](https://www.geoguessr.com/)*. |
-|     MAP-MAN |      `mapman` |    No | A 2.5D *[PAC-MAN](https://en.wikipedia.org/wiki/Pac-Man)*-based game played on a real-world map, similar to [Google Maps' 2015 and 2017 April Fool's jokes](https://pacman.fandom.com/wiki/Google_Maps_Pac-Man), but with 3D buildings. |
 
 ## Attribution
 
