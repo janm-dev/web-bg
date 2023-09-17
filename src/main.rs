@@ -20,6 +20,10 @@ use bevy::{
 #[cfg(feature = "debug")]
 use bevy_debug_text_overlay::OverlayPlugin;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
+#[cfg(feature = "debug")]
+use bevy_screen_diagnostics::{
+	ScreenDiagnosticsPlugin, ScreenEntityDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin,
+};
 use rand::seq::SliceRandom;
 
 games! {
@@ -93,6 +97,9 @@ pub fn main() {
 				font_size: 16.0,
 				..default()
 			},
+			ScreenDiagnosticsPlugin::default(),
+			ScreenFrameDiagnosticsPlugin,
+			ScreenEntityDiagnosticsPlugin,
 		));
 		app.add_systems(Startup, util::initial_startup_measurement);
 		app.add_systems(Update, (close_on_esc, util::full_startup_measurement));

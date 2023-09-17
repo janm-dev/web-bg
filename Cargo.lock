@@ -862,6 +862,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_screen_diagnostics"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00f51148d9ce56d2fcd677b9e99c149d2c49119d2cf4244f4c1100dfc003d288"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_sprite"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3413,6 +3422,7 @@ dependencies = [
  "bevy",
  "bevy-debug-text-overlay",
  "bevy_embedded_assets",
+ "bevy_screen_diagnostics",
  "console_error_panic_hook",
  "rand",
  "tracing",
