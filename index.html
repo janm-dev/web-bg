@@ -64,7 +64,7 @@
 			<p>
 				This is an example website showing
 				<a href="https://github.com/janm-dev/web-bg"><code>web-bg</code></a
-				>.
+				>. Press <kbd>G</kbd> to focus the game.
 			</p>
 			<p>
 				Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
@@ -134,6 +134,19 @@
 		</main>
 
 		<script referrerpolicy="no-referrer">
+			addEventListener("keyup", (e) => {
+				if (
+					e.key === "g" &&
+					!e.shiftKey &&
+					!e.ctrlKey &&
+					!e.altKey &&
+					!e.metaKey &&
+					!e.repeat
+				) {
+					document.getElementById("background").focus();
+				}
+			});
+
 			import("./background.js").then((m) =>
 				m
 					.default()
