@@ -3423,12 +3423,12 @@ dependencies = [
  "bevy-debug-text-overlay",
  "bevy_embedded_assets",
  "bevy_screen_diagnostics",
- "console_error_panic_hook",
  "rand",
  "tracing",
  "tracing-tracy",
  "tracy-client",
  "tracy-client-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]

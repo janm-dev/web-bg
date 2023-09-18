@@ -25,10 +25,16 @@
 				color: #0066ff;
 			}
 
-			code {
+			code,
+			pre {
 				background-color: #15152a;
 				border-radius: 0.5rem;
 				padding: 0.1rem 0.35rem;
+			}
+
+			#error-log {
+				display: none;
+				border: 0.1rem solid red;
 			}
 
 			#background-wrapper {
@@ -66,6 +72,7 @@
 				<a href="https://github.com/janm-dev/web-bg"><code>web-bg</code></a
 				>. Press <kbd>G</kbd> to focus the game.
 			</p>
+			<pre id="error-log"></pre>
 			<p>
 				Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
 				tempor incididunt ut labore et dolore magna aliqua. Tellus at urna
@@ -134,6 +141,16 @@
 		</main>
 
 		<script referrerpolicy="no-referrer">
+			function web_bg_panic(msg) {
+				const placeholder = document.getElementById("background-placeholder");
+				placeholder.style.transition = "none";
+				placeholder.style.opacity = "1";
+
+				const log = document.getElementById("error-log");
+				log.innerText = msg;
+				log.style.display = "block";
+			}
+
 			addEventListener("keyup", (e) => {
 				if (
 					e.key === "g" &&
@@ -157,6 +174,10 @@
 						throw new EvalError("web-bg wasm event loop exited");
 					})
 					.catch((e) => {
+						const placeholder = document.getElementById(
+							"background-placeholder"
+						);
+
 						// `m.default()` runs main, which runs the event loop,
 						// which goes into an async JS environment and then
 						// throws this exception to "exit" Rust, so this is
@@ -169,8 +190,7 @@
 						}
 
 						console.debug(`web-bg wasm init catch(${e})`);
-						document.getElementById("background-placeholder").style.opacity =
-							"0";
+						placeholder.style.opacity = "0";
 					})
 			);
 		</script>

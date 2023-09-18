@@ -9,6 +9,11 @@
 pub mod util;
 
 use std::time::Duration;
+#[cfg(target_arch = "wasm32")]
+use std::{
+	backtrace::{Backtrace, BacktraceStatus},
+	panic::PanicInfo,
+};
 
 use bevy::{
 	asset::ChangeWatcher,
@@ -41,6 +46,44 @@ games! {
 	// "racecar" => racecar,
 }
 
+#[cfg(target_arch = "wasm32")]
+fn panic_hook(panic_info: &PanicInfo<'_>) {
+	use wasm_bindgen::prelude::*;
+
+	#[wasm_bindgen]
+	extern "C" {
+		#[wasm_bindgen(js_namespace = console)]
+		fn error(msg: String);
+
+		fn web_bg_panic(msg: String);
+
+		type Error;
+
+		#[wasm_bindgen(constructor)]
+		fn new() -> Error;
+
+		#[wasm_bindgen(structural, method, getter)]
+		fn stack(error: &Error) -> String;
+	}
+
+	let mut msg = panic_info.to_string();
+
+	msg.push_str("\n\nJS/WASM Stack:\n\n");
+	let e = Error::new();
+	let stack = e.stack();
+	msg.push_str(&stack);
+
+	let stack = Backtrace::force_capture();
+	if stack.status() == BacktraceStatus::Captured {
+		msg.push_str("\n\nRust Stack:\n\n");
+		msg.push_str(&stack.to_string());
+	}
+
+	msg.push_str("\n\n");
+	error(msg.clone());
+	web_bg_panic(msg);
+}
+
 #[bevy_main]
 #[allow(clippy::missing_panics_doc)]
 pub fn main() {
@@ -48,13 +91,13 @@ pub fn main() {
 	util::init_startup_measurement();
 
 	#[cfg(target_arch = "wasm32")]
-	console_error_panic_hook::set_once();
+	std::panic::set_hook(Box::new(panic_hook));
 
 	let game = GAMES
 		.choose(&mut rand::thread_rng())
 		.expect("there are no games");
 
-	println!("Starting game \"{}\"", game.name);
+	info!("Starting game \"{}\"", game.name);
 
 	let mut app = App::new();
 
