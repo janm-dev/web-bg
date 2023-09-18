@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 #[cfg(feature = "profile")]
 use tracing::instrument;
@@ -11,6 +13,8 @@ const TILE_SCALE: f32 = 2.0;
 const TILE_FRAME_TIME_SECONDS: f32 = 0.1;
 
 const MOVEMENT_SPEED: f32 = 150.0;
+
+const LIGHT_INITIAL_INTENSITY: f32 = 50_000_000.0;
 
 #[derive(Debug, Component)]
 pub struct Player {
@@ -46,33 +50,57 @@ pub fn initialize(
 	);
 	let walking_atlas_handle = texture_atlases.add(walking_atlas);
 
-	commands.spawn((
-		Player {
-			idle_sprites: idle_atlas_handle.clone(),
-			walking_sprites: walking_atlas_handle,
-		},
-		Movement {
-			is_right: true,
-			is_walking: false,
-		},
-		SpriteSheetBundle {
-			texture_atlas: idle_atlas_handle,
-			sprite: TextureAtlasSprite::new(0),
-			transform: Transform {
-				translation: Vec3 {
-					z: 10.0,
+	commands
+		.spawn((
+			Player {
+				idle_sprites: idle_atlas_handle.clone(),
+				walking_sprites: walking_atlas_handle,
+			},
+			Movement {
+				is_right: true,
+				is_walking: false,
+			},
+			SpriteSheetBundle {
+				texture_atlas: idle_atlas_handle,
+				sprite: TextureAtlasSprite::new(0),
+				transform: Transform {
+					translation: Vec3 {
+						z: 10.0,
+						..default()
+					},
+					scale: Vec3::splat(TILE_SCALE),
 					..default()
 				},
-				scale: Vec3::splat(TILE_SCALE),
 				..default()
 			},
-			..default()
-		},
-		AnimationTimer(Timer::from_seconds(
-			TILE_FRAME_TIME_SECONDS,
-			TimerMode::Repeating,
-		)),
-	));
+			AnimationTimer(Timer::from_seconds(
+				TILE_FRAME_TIME_SECONDS,
+				TimerMode::Repeating,
+			)),
+		))
+		.with_children(|builder| {
+			builder.spawn((
+				PointLightBundle {
+					point_light: PointLight {
+						color: Color::ORANGE,
+						intensity: LIGHT_INITIAL_INTENSITY,
+						range: 1000.0,
+						shadows_enabled: true,
+						..default()
+					},
+					transform: Transform {
+						translation: Vec3 {
+							x: 0.0,
+							y: 0.0,
+							z: 0.5,
+						},
+						..default()
+					},
+					..default()
+				},
+				FlickerTimer(Timer::new(Duration::ZERO, TimerMode::Repeating)),
+			));
+		});
 }
 
 #[cfg_attr(feature = "profile", instrument(skip_all))]
@@ -97,6 +125,21 @@ pub fn movement(
 	}
 }
 
+#[derive(Component, Deref, DerefMut)]
+pub struct FlickerTimer(Timer);
+
+#[cfg_attr(feature = "profile", instrument(skip_all))]
+pub fn light_flicker(time: Res<Time>, mut query: Query<(&mut PointLight, &mut FlickerTimer)>) {
+	for (mut light, mut timer) in &mut query {
+		timer.tick(time.delta());
+
+		if timer.just_finished() {
+			light.intensity = LIGHT_INITIAL_INTENSITY * (rand::random::<f32>() + 1.0) / 2.0;
+			timer.set_duration(Duration::from_secs_f64(rand::random::<f64>() / 5.0));
+		}
+	}
+}
+
 #[cfg_attr(feature = "profile", instrument(skip_all))]
 pub fn collision(
 	mut player: Query<&mut Transform, With<Player>>,
@@ -104,9 +147,7 @@ pub fn collision(
 ) {
 	use maze::Direction::{Bottom, Left, Right, Top};
 
-	let mut player = player
-		.get_single_mut()
-		.expect("there is not exactly one player");
+	let mut player = player.single_mut();
 
 	let half_size = maze::TILE_SIZE / 2.0;
 	let inner_half = half_size - maze::WALL_THICKNESS;

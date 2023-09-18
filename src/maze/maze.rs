@@ -1,4 +1,5 @@
 use std::{
+	f32::consts::PI,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	ops::Neg,
 };
@@ -26,11 +27,14 @@ pub const SUBTILE_SCALE: f32 = 2.0 / 5.0;
 
 #[derive(Resource)]
 pub struct Maze {
-	pub width: u32,
-	pub height: u32,
+	width: u32,
+	height: u32,
 	pub tiles: Box<[Tile]>,
-	pub wall: Handle<Image>,
-	pub floor: [Handle<Image>; 2],
+	wall: Box<[Handle<StandardMaterial>]>,
+	floor: Box<[Handle<StandardMaterial>]>,
+	wall_mesh: Handle<Mesh>,
+	floor_mesh: Handle<Mesh>,
+	wall_material: Handle<StandardMaterial>,
 }
 
 impl Maze {
@@ -38,14 +42,20 @@ impl Maze {
 	///
 	/// # Panic
 	/// Panics if the maze is not `width * height` tiles large
+	#[allow(clippy::too_many_arguments)]
 	pub fn new(
 		maze: impl Into<Box<[Tile]>>,
 		width: u32,
 		height: u32,
-		wall: Handle<Image>,
-		floor: [Handle<Image>; 2],
+		wall: impl Into<Box<[Handle<StandardMaterial>]>>,
+		floor: impl Into<Box<[Handle<StandardMaterial>]>>,
+		wall_mesh: Handle<Mesh>,
+		floor_mesh: Handle<Mesh>,
+		wall_material: Handle<StandardMaterial>,
 	) -> Self {
 		let tiles = maze.into();
+		let wall = wall.into();
+		let floor = floor.into();
 
 		assert_eq!(
 			width * height,
@@ -59,6 +69,9 @@ impl Maze {
 			tiles,
 			wall,
 			floor,
+			wall_mesh,
+			floor_mesh,
+			wall_material,
 		}
 	}
 
@@ -105,15 +118,27 @@ impl Maze {
 			}))
 			.with_children(|builder| {
 				let i = self.idx(x, y);
+
+				let is_fully_open = tile.is_open(Top)
+					&& tile.is_open(Right)
+					&& tile.is_open(Bottom)
+					&& tile.is_open(Left);
 				let is_fully_closed = tile.is_closed(Top)
 					&& tile.is_closed(Right)
 					&& tile.is_closed(Bottom)
 					&& tile.is_closed(Left);
 
+				if !(is_fully_closed || is_fully_open) {
+					self.spawn_tile_walls(builder, tile);
+				}
+
 				for sy in -2i8..=2 {
 					for sx in -2i8..=2 {
 						let texture = if is_fully_closed || is_edge(i, sx, sy, &self.tiles) {
-							self.wall.clone()
+							self.wall
+								.choose(rng)
+								.expect("there are no wall textures")
+								.clone()
 						} else {
 							self.floor
 								.choose(rng)
@@ -121,22 +146,16 @@ impl Maze {
 								.clone()
 						};
 
-						builder.spawn(SpriteBundle {
-							texture,
+						builder.spawn(PbrBundle {
+							mesh: self.floor_mesh.clone(),
+							material: texture.clone(),
 							transform: Transform {
 								translation: Vec3 {
 									x: SUBTILE_SIZE.x * SUBTILE_SCALE * f32::from(sx),
 									y: SUBTILE_SIZE.y * SUBTILE_SCALE * f32::from(sy),
-									z: -1.0,
+									z: 0.0,
 								},
 								scale: Vec3::splat(SUBTILE_SCALE),
-								..default()
-							},
-							sprite: Sprite {
-								// The sprites have a bit of padding due to issues with MSAA on
-								// sprite edges. This padding is cut off here.
-								rect: Some(Rect::new(1.0, 1.0, 16.0, 16.0)),
-								custom_size: Some(Vec2::new(16.0, 16.0)),
 								..default()
 							},
 							..default()
@@ -144,6 +163,74 @@ impl Maze {
 					}
 				}
 			});
+	}
+
+	fn spawn_tile_walls(&self, builder: &mut ChildBuilder, tile: Tile) {
+		if tile.is_closed(Top) {
+			builder.spawn(PbrBundle {
+				mesh: self.wall_mesh.clone(),
+				material: self.wall_material.clone(),
+				transform: Transform {
+					translation: Vec3 {
+						x: 0.0,
+						y: TILE_SIZE.y / 2.0,
+						z: 0.0,
+					},
+					..default()
+				},
+				..default()
+			});
+		}
+
+		if tile.is_closed(Bottom) {
+			builder.spawn(PbrBundle {
+				mesh: self.wall_mesh.clone(),
+				material: self.wall_material.clone(),
+				transform: Transform {
+					translation: Vec3 {
+						x: 0.0,
+						y: -TILE_SIZE.y / 2.0,
+						z: 0.0,
+					},
+					..default()
+				},
+				..default()
+			});
+		}
+
+		if tile.is_closed(Right) {
+			builder.spawn(PbrBundle {
+				mesh: self.wall_mesh.clone(),
+				material: self.wall_material.clone(),
+				transform: Transform {
+					translation: Vec3 {
+						x: TILE_SIZE.x / 2.0,
+						y: 0.0,
+						z: 0.0,
+					},
+					rotation: Quat::from_rotation_z(PI / 2.0),
+					..default()
+				},
+				..default()
+			});
+		}
+
+		if tile.is_closed(Left) {
+			builder.spawn(PbrBundle {
+				mesh: self.wall_mesh.clone(),
+				material: self.wall_material.clone(),
+				transform: Transform {
+					translation: Vec3 {
+						x: -TILE_SIZE.x / 2.0,
+						y: 0.0,
+						z: 0.0,
+					},
+					rotation: Quat::from_rotation_z(PI / 2.0),
+					..default()
+				},
+				..default()
+			});
+		}
 	}
 }
 
@@ -225,8 +312,14 @@ impl Default for Tile {
 	}
 }
 
+#[allow(clippy::too_many_lines)]
 #[cfg_attr(feature = "profile", instrument(skip_all))]
-pub fn initialize(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn initialize(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut meshes: ResMut<Assets<Mesh>>,
+	mut materials: ResMut<Assets<StandardMaterial>>,
+) {
 	let mut rng = SmallRng::from_entropy();
 
 	let wall = asset_server.load("maze/cave-wall.png");
@@ -235,7 +328,135 @@ pub fn initialize(mut commands: Commands, asset_server: Res<AssetServer>) {
 		asset_server.load("maze/cave-floor-2.png"),
 	];
 
-	let maze = gen_maze(&mut rng, wall, floor);
+	let wall = [
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(wall.clone()),
+			reflectance: 0.1,
+			perceptual_roughness: 1.0,
+			depth_map: Some(wall.clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(wall.clone()),
+			normal_map_texture: Some(wall.clone()),
+			unlit: false,
+			..default()
+		}),
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(wall.clone()),
+			reflectance: 0.1,
+			perceptual_roughness: 0.8,
+			depth_map: Some(wall.clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(wall.clone()),
+			normal_map_texture: Some(wall.clone()),
+			unlit: false,
+			..default()
+		}),
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(wall.clone()),
+			reflectance: 0.2,
+			perceptual_roughness: 1.0,
+			depth_map: Some(wall.clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(wall.clone()),
+			normal_map_texture: Some(wall.clone()),
+			unlit: false,
+			..default()
+		}),
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(wall.clone()),
+			reflectance: 0.2,
+			perceptual_roughness: 0.8,
+			depth_map: Some(wall.clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(wall.clone()),
+			normal_map_texture: Some(wall),
+			unlit: false,
+			..default()
+		}),
+	];
+
+	let floor = [
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(floor[0].clone()),
+			reflectance: 0.1,
+			perceptual_roughness: 1.0,
+			depth_map: Some(floor[0].clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(floor[0].clone()),
+			normal_map_texture: Some(floor[0].clone()),
+			unlit: false,
+			..default()
+		}),
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(floor[1].clone()),
+			reflectance: 0.1,
+			perceptual_roughness: 1.0,
+			depth_map: Some(floor[1].clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(floor[1].clone()),
+			normal_map_texture: Some(floor[1].clone()),
+			unlit: false,
+			..default()
+		}),
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(floor[0].clone()),
+			reflectance: 0.1,
+			perceptual_roughness: 0.85,
+			depth_map: Some(floor[0].clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(floor[0].clone()),
+			normal_map_texture: Some(floor[0].clone()),
+			unlit: false,
+			..default()
+		}),
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(floor[1].clone()),
+			reflectance: 0.1,
+			perceptual_roughness: 0.85,
+			depth_map: Some(floor[1].clone()),
+			emissive: Color::hsl(210.0, 0.3, 0.25),
+			emissive_texture: Some(floor[1].clone()),
+			normal_map_texture: Some(floor[1].clone()),
+			unlit: false,
+			..default()
+		}),
+	];
+
+	let floor_mesh = meshes.add(Mesh::from(shape::Quad::new(SUBTILE_SIZE)));
+	let wall_mesh = meshes.add(Mesh::from(shape::Box::new(
+		SUBTILE_SIZE.x.mul_add(SUBTILE_SCALE, TILE_SIZE.x),
+		SUBTILE_SIZE.y * SUBTILE_SCALE,
+		10.0,
+	)));
+
+	let wall_material = materials.add(StandardMaterial {
+		base_color: Color::rgba(1.0, 1.0, 1.0, 1.0),
+		emissive: Color::rgba(0.0, 0.0, 0.0, 0.0),
+		reflectance: 1.0,
+		unlit: true,
+		fog_enabled: false,
+		..default()
+	});
+
+	let maze = gen_maze(&mut rng);
+	let maze = Maze::new(
+		maze,
+		MAZE_SIZE.x,
+		MAZE_SIZE.y,
+		wall,
+		floor,
+		wall_mesh,
+		floor_mesh,
+		wall_material,
+	);
 
 	commands.insert_resource(maze);
 }
@@ -372,7 +593,7 @@ fn next_cave(pos: UVec2, visited: &[UVec2], rng: &mut impl Rng) -> Option<(UVec2
 type NextFn<R> = fn(UVec2, &[UVec2], &mut R) -> Option<(UVec2, Direction)>;
 
 #[cfg_attr(feature = "profile", instrument(skip_all, fields(kind)))]
-fn gen_maze<R: Rng>(mut rng: &mut R, wall: Handle<Image>, floor: [Handle<Image>; 2]) -> Maze {
+fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	let us = |u32: u32| -> usize { u32.try_into().unwrap() };
 	let idx = |UVec2 { x, y }| usize::try_from(y * MAZE_SIZE.x + x).unwrap();
 
@@ -428,7 +649,7 @@ fn gen_maze<R: Rng>(mut rng: &mut R, wall: Handle<Image>, floor: [Handle<Image>;
 		}
 	}
 
-	Maze::new(maze, MAZE_SIZE.x, MAZE_SIZE.y, wall, floor)
+	maze
 }
 
 fn is_edge(i: usize, x: i8, y: i8, maze: &[Tile]) -> bool {
