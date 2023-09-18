@@ -499,8 +499,8 @@ pub fn spawn_visible_tiles(
 		.enumerate()
 		.filter(|&(i, _)| {
 			let Vec2 { x, y } = tile_position(i as u32);
-			let width = TILE_SIZE.x.mul_add(TILE_SCALE, window.width());
-			let height = TILE_SIZE.y.mul_add(TILE_SCALE, window.height());
+			let width = TILE_SIZE.x.mul_add(TILE_SCALE * 2.0, window.width());
+			let height = TILE_SIZE.y.mul_add(TILE_SCALE * 2.0, window.height());
 			let x_extent =
 				(camera.translation.x - width / 2.0)..(camera.translation.x + width / 2.0);
 			let y_extent =
@@ -545,8 +545,8 @@ pub fn despawn_invisible_tiles(
 
 	let mut old_tiles = tiles.iter().filter(|&(_, t)| {
 		let Vec3 { x, y, .. } = t.translation;
-		let width = TILE_SIZE.x.mul_add(TILE_SCALE * 2.0, window.width());
-		let height = TILE_SIZE.y.mul_add(TILE_SCALE * 2.0, window.height());
+		let width = TILE_SIZE.x.mul_add(TILE_SCALE * 3.0, window.width());
+		let height = TILE_SIZE.y.mul_add(TILE_SCALE * 3.0, window.height());
 		let x_extent = (camera.translation.x - width / 2.0)..(camera.translation.x + width / 2.0);
 		let y_extent = (camera.translation.y - height / 2.0)..(camera.translation.y + height / 2.0);
 		!x_extent.contains(&x) || !y_extent.contains(&y)
