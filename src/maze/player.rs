@@ -1,10 +1,8 @@
 use bevy::prelude::*;
+#[cfg(feature = "profile")]
+use tracing::instrument;
 
-use super::{
-	maze,
-	maze::{Tile, TileSide},
-	PlayerInput,
-};
+use super::{maze, maze::Tile, PlayerInput};
 
 const TILE_SIZE: Vec2 = Vec2::new(24.0, 32.0);
 const TILE_AMOUNT_IDLE: usize = 10;
@@ -26,6 +24,7 @@ pub struct Movement {
 	is_right: bool,
 }
 
+#[cfg_attr(feature = "profile", instrument(skip_all))]
 pub fn initialize(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
@@ -76,6 +75,7 @@ pub fn initialize(
 	));
 }
 
+#[cfg_attr(feature = "profile", instrument(skip_all))]
 pub fn movement(
 	time: Res<Time>,
 	input: Res<PlayerInput>,
@@ -97,13 +97,16 @@ pub fn movement(
 	}
 }
 
+#[cfg_attr(feature = "profile", instrument(skip_all))]
 pub fn collision(
 	mut player: Query<&mut Transform, With<Player>>,
 	tiles: Query<(&Transform, &Tile), Without<Player>>,
 ) {
+	use maze::Direction::{Bottom, Left, Right, Top};
+
 	let mut player = player
 		.get_single_mut()
-		.expect("there is more than one player");
+		.expect("there is not exactly one player");
 
 	let half_size = maze::TILE_SIZE / 2.0;
 	let inner_half = half_size - maze::WALL_THICKNESS;
@@ -125,6 +128,10 @@ pub fn collision(
 		})
 		.collect::<Vec<_>>();
 
+	if nearby_tiles.len() < 9 {
+		return;
+	}
+
 	#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 	nearby_tiles.sort_by_key(|(t, _)| (-t.translation.y as i32, t.translation.x as i32));
 	let nearby_tiles = nearby_tiles;
@@ -142,25 +149,25 @@ pub fn collision(
 	let mut is_below = player_edges[2] < tile_edges[2];
 	let mut is_left = player_edges[3] < tile_edges[3];
 
-	if current_tile.1.top == TileSide::Closed && is_above {
+	if current_tile.1.is_closed(Top) && is_above {
 		player.translation.y -= player_edges[0] - tile_edges[0];
 		tile_edges[0] = current_tile.0.translation.y + scaled_inner.y;
 		is_above = false;
 	}
 
-	if current_tile.1.right == TileSide::Closed && is_right {
+	if current_tile.1.is_closed(Right) && is_right {
 		player.translation.x -= player_edges[1] - tile_edges[1];
 		tile_edges[1] = current_tile.0.translation.x + scaled_inner.x;
 		is_right = false;
 	}
 
-	if current_tile.1.bottom == TileSide::Closed && is_below {
+	if current_tile.1.is_closed(Bottom) && is_below {
 		player.translation.y -= player_edges[2] - tile_edges[2];
 		tile_edges[2] = current_tile.0.translation.y - scaled_inner.y;
 		is_below = false;
 	}
 
-	if current_tile.1.left == TileSide::Closed && is_left {
+	if current_tile.1.is_closed(Left) && is_left {
 		player.translation.x -= player_edges[3] - tile_edges[3];
 		tile_edges[3] = current_tile.0.translation.x - scaled_inner.x;
 		is_left = false;
@@ -169,7 +176,7 @@ pub fn collision(
 	let player_tile_diff = (player.translation - current_tile.0.translation).abs();
 	let coll_is_horizontal = player_tile_diff.y > player_tile_diff.x;
 
-	if (nearby_tiles[3].1.top == TileSide::Closed || nearby_tiles[1].1.left == TileSide::Closed)
+	if (nearby_tiles[3].1.is_closed(Top) || nearby_tiles[1].1.is_closed(Left))
 		&& is_above
 		&& is_left
 	{
@@ -180,7 +187,7 @@ pub fn collision(
 		}
 	}
 
-	if (nearby_tiles[3].1.bottom == TileSide::Closed || nearby_tiles[7].1.left == TileSide::Closed)
+	if (nearby_tiles[3].1.is_closed(Bottom) || nearby_tiles[7].1.is_closed(Left))
 		&& is_below
 		&& is_left
 	{
@@ -191,7 +198,7 @@ pub fn collision(
 		}
 	}
 
-	if (nearby_tiles[5].1.top == TileSide::Closed || nearby_tiles[1].1.right == TileSide::Closed)
+	if (nearby_tiles[5].1.is_closed(Top) || nearby_tiles[1].1.is_closed(Right))
 		&& is_above
 		&& is_right
 	{
@@ -202,7 +209,7 @@ pub fn collision(
 		}
 	}
 
-	if (nearby_tiles[5].1.bottom == TileSide::Closed || nearby_tiles[7].1.right == TileSide::Closed)
+	if (nearby_tiles[5].1.is_closed(Bottom) || nearby_tiles[7].1.is_closed(Right))
 		&& is_below
 		&& is_right
 	{
@@ -217,6 +224,7 @@ pub fn collision(
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
+#[cfg_attr(feature = "profile", instrument(skip_all))]
 pub fn animation(
 	time: Res<Time>,
 	mut query: Query<(

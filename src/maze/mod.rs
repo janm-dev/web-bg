@@ -29,6 +29,8 @@ pub fn start(app: &mut App) {
 			player::animation,
 			player::movement,
 			player::collision.after(player::movement),
+			maze::spawn_visible_tiles,
+			maze::despawn_invisible_tiles,
 		),
 	);
 	app.insert_resource(PlayerInput::default());
