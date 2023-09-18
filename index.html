@@ -151,11 +151,24 @@
 				m
 					.default()
 					.then((o) => {
-						document.getElementById("background-placeholder").style.opacity =
-							"0";
-						o.main();
+						// `m.default()` runs main, which runs the event loop,
+						// which goes into an async JS environment and then
+						// throws an exception, so this should never happen
+						throw new EvalError("web-bg wasm event loop exited");
 					})
-					.catch(() => {
+					.catch((e) => {
+						// `m.default()` runs main, which runs the event loop,
+						// which goes into an async JS environment and then
+						// throws this exception to "exit" Rust, so this is
+						// expected and indicates success
+						if (
+							e.message !==
+							"Using exceptions for control flow, don't mind me. This isn't actually an error!"
+						) {
+							throw e;
+						}
+
+						console.debug(`web-bg wasm init catch(${e})`);
 						document.getElementById("background-placeholder").style.opacity =
 							"0";
 					})
