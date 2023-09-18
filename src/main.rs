@@ -10,7 +10,12 @@ pub mod util;
 
 use std::time::Duration;
 
-use bevy::{asset::ChangeWatcher, log::LogPlugin, prelude::*, window::WindowMode};
+use bevy::{
+	asset::ChangeWatcher,
+	log::LogPlugin,
+	prelude::*,
+	window::{WindowMode, WindowResolution},
+};
 #[cfg(feature = "debug")]
 use bevy::{
 	diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -57,6 +62,8 @@ pub fn main() {
 		.set(WindowPlugin {
 			primary_window: Some(Window {
 				mode: WindowMode::BorderlessFullscreen,
+				prevent_default_event_handling: false,
+				resolution: WindowResolution::default().with_scale_factor_override(1.0),
 				resizable: true,
 				fit_canvas_to_parent: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
