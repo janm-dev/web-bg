@@ -21,12 +21,18 @@ pub struct Time(Instant);
 pub struct Time(f64);
 
 impl Time {
+	/// Get the current time
 	#[cfg(not(target_arch = "wasm32"))]
 	#[must_use]
 	pub fn now() -> Self {
 		Self(Instant::now())
 	}
 
+	/// Get the current time
+	///
+	/// # Panics
+	/// This function panics if the `window` JS object or its `performance`
+	/// property are unavailable
 	#[cfg(target_arch = "wasm32")]
 	#[must_use]
 	pub fn now() -> Self {
@@ -38,12 +44,17 @@ impl Time {
 		Self(performance.now() / 1000.0)
 	}
 
+	/// Get the time elapsed since this `Time`
 	#[cfg(not(target_arch = "wasm32"))]
 	#[must_use]
 	pub fn elapsed(&self) -> Duration {
 		self.0.elapsed()
 	}
 
+	/// Get the time elapsed since this `Time`
+	///
+	/// # Panics
+	/// This function panics if `Time::now` panics
 	#[cfg(target_arch = "wasm32")]
 	#[must_use]
 	pub fn elapsed(&self) -> Duration {
@@ -77,6 +88,9 @@ pub enum RunEvent {
 }
 
 impl RunEvent {
+	/// Get the name of this event
+	///
+	/// On `wasm32` this is the `type` of the `CustomEvent` for this `RunEvent`
 	#[must_use]
 	pub const fn name(&self) -> &'static str {
 		match self {
@@ -87,7 +101,10 @@ impl RunEvent {
 		}
 	}
 
+	/// Get the details of this `RunEvent` as a JS value (type depending on the
+	/// `RunEvent` variant)
 	#[cfg(target_arch = "wasm32")]
+	#[must_use]
 	pub fn details(&self) -> JsValue {
 		match self {
 			Self::Loaded(s) => JsValue::from_str(s),
@@ -99,6 +116,12 @@ impl RunEvent {
 		}
 	}
 
+	/// Get a JavaScript `Event` representing this `RunEvent`
+	///
+	/// # Panics
+	/// This function panics if the JS `CustomEvent(type, options)` constructor
+	/// fails
+	#[must_use]
 	#[cfg(target_arch = "wasm32")]
 	pub fn into_js(&self) -> Event {
 		CustomEvent::new_with_event_init_dict(
@@ -128,10 +151,24 @@ impl Display for RunEvent {
 	}
 }
 
+/// Initialize event time measurements
+///
+/// This should be called as early as possible during application startup
+///
+/// # Panics
+/// This function panics on `wasm32` if `Time::now` panics (if the `window` JS
+/// object or its `performance` property are unavailable)
 pub fn init() {
 	STARTUP_TIME.get_or_init(Time::now);
 }
 
+/// Dispatch the `Loaded` event once
+///
+/// This should be called as early as possible during application startup
+///
+/// # Panics
+/// This function panics on `wasm32` if the `window` JS object or its
+/// `dispatchEvent` method are unavailable or throw
 pub fn loaded(game: &'static str) {
 	static ONCE: Once = Once::new();
 
@@ -148,6 +185,13 @@ pub fn loaded(game: &'static str) {
 	});
 }
 
+/// Dispatch the `Initialized` event once
+///
+/// This should be called after startup systems have run
+///
+/// # Panics
+/// This function panics if `Time::elapsed` panics or on `wasm32` if the
+/// `window` JS object or its `dispatchEvent` method are unavailable or throw
 pub fn initialized() {
 	static ONCE: Once = Once::new();
 
@@ -165,6 +209,16 @@ pub fn initialized() {
 	});
 }
 
+/// Dispatch the `Started` event once
+///
+/// This should be called after update systems have run
+///
+/// This function skips its first call and dispatches the event the second time
+/// it's called
+///
+/// # Panics
+/// This function panics if `Time::elapsed` panics or on `wasm32` if the
+/// `window` JS object or its `dispatchEvent` method are unavailable or throw
 pub fn started() {
 	static SKIP: Once = Once::new();
 	static ONCE: Once = Once::new();
@@ -187,18 +241,21 @@ pub fn started() {
 	SKIP.call_once(|| ());
 }
 
+/// Dispatch the `Panicked` event
+///
+/// This should be called from a panic handler or hook
+///
+/// # Panics
+/// This function panics on `wasm32` if the `window` JS object or its
+/// `dispatchEvent` method are unavailable or throw
 pub fn panic(info: String) {
-	static ONCE: Once = Once::new();
+	let event = RunEvent::Panicked(Some(info));
 
-	ONCE.call_once(|| {
-		let event = RunEvent::Panicked(Some(info));
+	#[cfg(target_arch = "wasm32")]
+	web_sys::window()
+		.expect("JS `window` not available")
+		.dispatch_event(&event.into_js())
+		.expect("JS `dispatchEvent` failed");
 
-		#[cfg(target_arch = "wasm32")]
-		web_sys::window()
-			.expect("JS `window` not available")
-			.dispatch_event(&event.into_js())
-			.expect("JS `dispatchEvent` failed");
-
-		error!("{event}");
-	});
+	error!("{event}");
 }
