@@ -6,21 +6,16 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::tabs_in_doc_comments)]
 
+pub mod events;
 pub mod util;
 
-use std::time::Duration;
-#[cfg(target_arch = "wasm32")]
 use std::{
 	backtrace::{Backtrace, BacktraceStatus},
 	panic::PanicInfo,
+	time::Duration,
 };
 
-use bevy::{
-	asset::ChangeWatcher,
-	log::LogPlugin,
-	prelude::*,
-	window::{WindowMode, WindowResolution},
-};
+use bevy::{asset::ChangeWatcher, log::LogPlugin, prelude::*, window::WindowMode};
 #[cfg(feature = "debug")]
 use bevy::{
 	diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -35,6 +30,14 @@ use bevy_screen_diagnostics::{
 	ScreenDiagnosticsPlugin, ScreenEntityDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin,
 };
 use rand::seq::SliceRandom;
+#[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
+use rlsf::SmallGlobalTlsf;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
+#[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
+#[global_allocator]
+static ALLOC: SmallGlobalTlsf = SmallGlobalTlsf::new();
 
 games! {
 	// "asteroids" => asteroids,
@@ -46,17 +49,10 @@ games! {
 	// "racecar" => racecar,
 }
 
-#[cfg(target_arch = "wasm32")]
 fn panic_hook(panic_info: &PanicInfo<'_>) {
-	use wasm_bindgen::prelude::*;
-
+	#[cfg(target_arch = "wasm32")]
 	#[wasm_bindgen]
 	extern "C" {
-		#[wasm_bindgen(js_namespace = console)]
-		fn error(msg: String);
-
-		fn web_bg_panic(msg: String);
-
 		type Error;
 
 		#[wasm_bindgen(constructor)]
@@ -68,10 +64,13 @@ fn panic_hook(panic_info: &PanicInfo<'_>) {
 
 	let mut msg = panic_info.to_string();
 
-	msg.push_str("\n\nJS/WASM Stack:\n\n");
-	let e = Error::new();
-	let stack = e.stack();
-	msg.push_str(&stack);
+	#[cfg(target_arch = "wasm32")]
+	{
+		msg.push_str("\n\nJS/WASM Stack:\n\n");
+		let e = Error::new();
+		let stack = e.stack();
+		msg.push_str(&stack);
+	}
 
 	let stack = Backtrace::force_capture();
 	if stack.status() == BacktraceStatus::Captured {
@@ -80,24 +79,24 @@ fn panic_hook(panic_info: &PanicInfo<'_>) {
 	}
 
 	msg.push_str("\n\n");
-	error(msg.clone());
-	web_bg_panic(msg);
+
+	#[cfg(target_arch = "wasm32")]
+	web_sys::console::error_1(&JsValue::from_str(&msg));
+
+	events::panic(msg);
 }
 
 #[bevy_main]
 #[allow(clippy::missing_panics_doc)]
 pub fn main() {
-	#[cfg(feature = "debug")]
-	util::init_startup_measurement();
-
-	#[cfg(target_arch = "wasm32")]
 	std::panic::set_hook(Box::new(panic_hook));
+	events::init();
 
 	let game = GAMES
 		.choose(&mut rand::thread_rng())
 		.expect("there are no games");
 
-	info!("Starting game \"{}\"", game.name);
+	events::loaded(game.name);
 
 	let mut app = App::new();
 
@@ -109,11 +108,10 @@ pub fn main() {
 				fit_canvas_to_parent: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
-					""
+					String::new()
 				} else {
-					"web-bg"
-				}
-				.to_string(),
+					format!("{} | web-bg", game.name)
+				},
 				..default()
 			}),
 			..default()
@@ -121,7 +119,7 @@ pub fn main() {
 		.set(ImagePlugin::default_nearest())
 		.set(AssetPlugin {
 			watch_for_changes: cfg!(feature = "debug").then_some(ChangeWatcher {
-				delay: Duration::from_millis(500),
+				delay: Duration::from_millis(100),
 			}),
 			..default()
 		})
@@ -149,10 +147,14 @@ pub fn main() {
 			ScreenFrameDiagnosticsPlugin,
 			ScreenEntityDiagnosticsPlugin,
 		));
-		app.add_systems(Startup, util::initial_startup_measurement);
-		app.add_systems(Update, (close_on_esc, util::full_startup_measurement));
+
+		app.add_systems(Update, close_on_esc);
 	}
 
+	app.add_systems(PostStartup, events::initialized);
+	app.add_systems(Update, events::started);
+
 	(game.start)(&mut app);
+
 	app.run();
 }

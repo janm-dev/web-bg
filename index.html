@@ -34,6 +34,7 @@
 
 			#error-log {
 				display: none;
+				overflow-x: scroll;
 				border: 0.1rem solid red;
 			}
 
@@ -55,7 +56,7 @@
 				position: fixed;
 				background-color: #060612;
 				opacity: 1;
-				transition: opacity 5s cubic-bezier(0.95, 0.05, 0.795, 0.035);
+				transition: opacity 2.5s cubic-bezier(0.95, 0.05, 0.795, 0.035);
 			}
 		</style>
 	</head>
@@ -140,17 +141,33 @@
 			</p>
 		</main>
 
-		<script referrerpolicy="no-referrer">
-			function web_bg_panic(msg) {
-				const placeholder = document.getElementById("background-placeholder");
-				placeholder.style.transition = "none";
-				placeholder.style.opacity = "1";
+		<script>
+			// When `web-bg` has started, show it by hiding the placeholder
+			addEventListener(
+				"web-bg-start",
+				() => {
+					const placeholder = document.getElementById("background-placeholder");
+					placeholder.style.opacity = "0";
+				},
+				{ once: true, passive: true }
+			);
 
-				const log = document.getElementById("error-log");
-				log.innerText = msg;
-				log.style.display = "block";
-			}
+			// If `web-bg` panics, hide the canvas and show the error message on screen
+			addEventListener(
+				"web-bg-panic",
+				(event) => {
+					const placeholder = document.getElementById("background-placeholder");
+					placeholder.style.transition = "none";
+					placeholder.style.opacity = "1";
 
+					const log = document.getElementById("error-log");
+					log.innerText = event.detail;
+					log.style.display = "block";
+				},
+				{ once: true, passive: true }
+			);
+
+			// Allow the user to focus the background canvas using the keyboard
 			addEventListener("keyup", (e) => {
 				if (
 					e.key === "g" &&
@@ -164,6 +181,7 @@
 				}
 			});
 
+			// Import and run `web-bg`
 			import("./background.js").then((m) =>
 				m
 					.default()
@@ -171,13 +189,9 @@
 						// `m.default()` runs main, which runs the event loop,
 						// which goes into an async JS environment and then
 						// throws an exception, so this should never happen
-						throw new EvalError("web-bg wasm event loop exited");
+						throw new Error("web-bg wasm event loop exited");
 					})
 					.catch((e) => {
-						const placeholder = document.getElementById(
-							"background-placeholder"
-						);
-
 						// `m.default()` runs main, which runs the event loop,
 						// which goes into an async JS environment and then
 						// throws this exception to "exit" Rust, so this is
@@ -188,9 +202,6 @@
 						) {
 							throw e;
 						}
-
-						console.debug(`web-bg wasm init catch(${e})`);
-						placeholder.style.opacity = "0";
 					})
 			);
 		</script>

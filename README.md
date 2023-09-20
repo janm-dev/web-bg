@@ -32,6 +32,23 @@ Each minigame has one [Cargo feature](https://doc.rust-lang.org/cargo/reference/
 |     Portoom |     `portoom` |    No | A *[Doom](https://en.wikipedia.org/wiki/Doom_(1993_video_game))*-style, *[Portal](https://en.wikipedia.org/wiki/Portal_(video_game))*-inspired first-person shooter. |
 |     Racecar |     `racecar` |    No | A 2D multiplayer [slot car racing](https://en.wikipedia.org/wiki/Slot_car_racing) game. Real multiplayer support (playing against other people) coming soon. |
 
+## Usage on the web
+
+See `index.html` for an example of usage.
+
+`web-bg` needs a `canvas` element with id `background` to render to.
+The size of that element will be set to match the size of its parent by `web-bg`.
+
+`web-bg` takes keyboard, mouse, and touchscreen input from its canvas element.
+Websites should provide a way for the user to focus on that element, for example by clicking/tapping on it or via a global keyboard shortcut.
+
+`web-bg` dispatches JavaScript events to the `window` during various phases of execution:
+
+- `web-bg-load` when the application starts executing
+- `web-bg-init` when the application has initialized
+- `web-bg-start` when the application is fully ready for usage (`web-bg`'s canvas should be hidden until this event is received)
+- `web-bg-panic` if the application panics (`web-bg`'s canvas should be hidden when this event is received)
+
 ## Attribution
 
 In addition to Cargo dependencies, the following open-source resources are used as part of `web-bg`:

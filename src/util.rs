@@ -1,11 +1,5 @@
 //! `web-bg` utilities and other miscellaneous things.
 
-#[cfg(feature = "debug")]
-use std::{
-	sync::{Once, OnceLock},
-	time::Instant,
-};
-
 use bevy::prelude::*;
 
 /// Quickly declare minigames
@@ -183,40 +177,4 @@ pub fn input(
 		up: up.clamp(-1.0, 1.0),
 		right: right.clamp(-1.0, 1.0),
 	}
-}
-
-#[cfg(feature = "debug")]
-static STARTUP_TIME: OnceLock<Instant> = OnceLock::new();
-
-#[cfg(feature = "debug")]
-pub fn init_startup_measurement() {
-	STARTUP_TIME.get_or_init(Instant::now);
-}
-
-#[cfg(feature = "debug")]
-pub fn initial_startup_measurement() {
-	static ONCE: Once = Once::new();
-
-	ONCE.call_once(|| {
-		let Some(t) = STARTUP_TIME.get() else {
-			info!("Initial startup completed, time not measured");
-			return;
-		};
-		let ms = t.elapsed().as_millis();
-		info!("Initial startup completed in {ms} ms");
-	});
-}
-
-#[cfg(feature = "debug")]
-pub fn full_startup_measurement() {
-	static ONCE: Once = Once::new();
-
-	ONCE.call_once(|| {
-		let Some(t) = STARTUP_TIME.get() else {
-			info!("Full startup completed, time not measured");
-			return;
-		};
-		let ms = t.elapsed().as_millis();
-		info!("Full startup completed in {ms} ms");
-	});
 }
