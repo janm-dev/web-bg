@@ -18,18 +18,25 @@ default = [
 	"portoom",
 	"racecar",
 ]
+dynamic = ["bevy/dynamic_linking"]
 debug = [
-	"bevy/dynamic_linking",
 	"dep:bevy-debug-text-overlay",
 	"dep:bevy_screen_diagnostics",
 ]
 profile = [
+	"debug",
 	"bevy/trace",
 	"bevy/trace_tracy",
 	"dep:tracing",
 	"dep:tracing-tracy",
 	"dep:tracy-client",
 	"dep:tracy-client-sys",
+]
+console_log = [
+	"dep:tracing",
+	"dep:tracing-core",
+	"dep:tracing-subscriber",
+	"dep:tracing-web",
 ]
 asteroids = []
 lander = []
@@ -51,6 +58,11 @@ rand = { version = "0.8.5", features = ["small_rng"] }
 bevy_screen_diagnostics = { version = "0.3.0", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+tracing-core = { version = "0.1.31", optional = true }
+tracing-subscriber = { version = "0.3.17", features = [
+	"registry",
+], optional = true }
+tracing-web = { version = "0.1.2", optional = true }
 web-sys = { version = "0.3.64", features = [
 	"console",
 	"Window",
@@ -78,7 +90,7 @@ opt-level = 3
 lto = "thin"
 incremental = false
 codegen-units = 1
-strip = true
+strip = false
 debug = true
 split-debuginfo = "packed"
 opt-level = 3

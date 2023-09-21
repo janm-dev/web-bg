@@ -1,6 +1,17 @@
 //! `web-bg` utilities and other miscellaneous things.
 
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+use std::fmt::{Error as FmtError, Result as FmtResult};
+
 use bevy::prelude::*;
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+use tracing_core::{subscriber::Interest, Level, Metadata};
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+use tracing_subscriber::{
+	filter::LevelFilter,
+	fmt::{format::Writer, time::FormatTime},
+	layer::{Context, Filter},
+};
 
 /// Quickly declare minigames
 ///
@@ -176,5 +187,63 @@ pub fn input(
 	*input = PlayerInput {
 		up: up.clamp(-1.0, 1.0),
 		right: right.clamp(-1.0, 1.0),
+	}
+}
+
+/// A timer for `tracing_subscriber` using a timestamp from JS `performance.now`
+#[derive(Debug, Clone, Copy)]
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+pub struct PerformanceTimer;
+
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+impl FormatTime for PerformanceTimer {
+	fn format_time(&self, w: &mut Writer<'_>) -> FmtResult {
+		let now = web_sys::window()
+			.ok_or(FmtError)?
+			.performance()
+			.ok_or(FmtError)?
+			.now();
+		w.write_fmt(format_args!("{now}"))
+	}
+}
+
+/// A filter for `tracing_subscriber` similar to the default bevy filter
+/// (`"wgpu=error,naga=warn,web-bg=debug", otherwise info`)
+#[derive(Debug, Clone, Copy)]
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+pub struct LogFilter;
+
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+impl LogFilter {
+	fn is_enabled(&self, meta: &Metadata<'_>) -> bool {
+		let path = meta.module_path().unwrap_or("");
+		if path.starts_with("wgpu") {
+			meta.level() <= &Level::ERROR
+		} else if path.starts_with("naga") {
+			meta.level() <= &Level::WARN
+		} else if path.starts_with("web_bg") {
+			meta.level() <= &Level::DEBUG
+		} else {
+			meta.level() <= &Level::INFO
+		}
+	}
+}
+
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+impl<S> Filter<S> for LogFilter {
+	fn enabled(&self, meta: &Metadata<'_>, _: &Context<'_, S>) -> bool {
+		self.is_enabled(meta)
+	}
+
+	fn callsite_enabled(&self, meta: &'static Metadata<'static>) -> Interest {
+		if self.is_enabled(meta) {
+			Interest::always()
+		} else {
+			Interest::never()
+		}
+	}
+
+	fn max_level_hint(&self) -> Option<LevelFilter> {
+		Some(LevelFilter::DEBUG)
 	}
 }

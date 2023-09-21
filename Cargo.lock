@@ -3266,6 +3266,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing-web"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ff5efc53ed5a7c4b99b3dd24fd10f41e7aa1b284a4e64ae9167d97e31afe124"
+dependencies = [
+ "js-sys",
+ "tracing-core",
+ "tracing-subscriber",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "tracy-client"
 version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3457,7 +3470,10 @@ dependencies = [
  "rand",
  "rlsf",
  "tracing",
+ "tracing-core",
+ "tracing-subscriber",
  "tracing-tracy",
+ "tracing-web",
  "tracy-client",
  "tracy-client-sys",
  "wasm-bindgen",

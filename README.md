@@ -6,7 +6,7 @@ Try it out locally with `cargo run` or see below for more info.
 
 ## Building
 
-To build and run `web-bg` as a regular application for local testing, run [`cargo run --features debug`](https://doc.rust-lang.org/cargo/commands/cargo-run.html). Note that while the first compilation will take a few minutes, subsequent builds should be much faster. Profiling support for [Tracy](https://github.com/wolfpld/tracy) can be enabled by adding the `profile` feature ([`cargo run --features debug,profile`](https://doc.rust-lang.org/cargo/commands/cargo-run.html)).
+To build and run `web-bg` as a regular application for local testing, run [`cargo run --features dynamic,debug`](https://doc.rust-lang.org/cargo/commands/cargo-run.html). Note that while the first compilation will take a few minutes, subsequent builds should be much faster. Profiling support for [Tracy](https://github.com/wolfpld/tracy) can be enabled by adding the `profile` feature ([`cargo run --features dynamic,profile`](https://doc.rust-lang.org/cargo/commands/cargo-run.html)).
 
 To build `web-bg` as a regular application, run [`cargo build --release`](https://doc.rust-lang.org/cargo/commands/cargo-build.html). The compiled binary will be located in `./target/release/web-bg[.exe]`. This build takes a few minutes, and is not recommended for debugging/testing/development.
 
@@ -48,6 +48,11 @@ Websites should provide a way for the user to focus on that element, for example
 - `web-bg-init` when the application has initialized
 - `web-bg-start` when the application is fully ready for usage (`web-bg`'s canvas should be hidden until this event is received)
 - `web-bg-panic` if the application panics (`web-bg`'s canvas should be hidden when this event is received)
+
+### Logging on the web
+
+If the `console_log` feature is enabled and you compile `web-bg` for the web, log messages will be logged to the console and tracing spans will be measured using the Performance API, at the expense of degraded application performance.
+The `console_log` feature does nothing when *not* compiling for the web.
 
 ## Attribution
 

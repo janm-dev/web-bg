@@ -31,12 +31,21 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: jetli/wasm-bindgen-action@v0.2.0
       - run: |
-          mkdir web
           cargo build --profile release-wasm --target wasm32-unknown-unknown
           wasm-bindgen --out-name web --out-dir target/wasm --target web target/wasm32-unknown-unknown/release-wasm/web-bg.wasm
+      - run: |
+          mkdir web
           npx --package=binaryen -- wasm-opt -O4 --output web/web_bg.wasm target/wasm/web_bg.wasm
           cp target/wasm/web.js web/background.js
           cp index.html web/index.html
+      - run: |
+          cargo build --features console_log,debug --profile release --target wasm32-unknown-unknown
+          wasm-bindgen --out-name web --out-dir target/wasm --target web target/wasm32-unknown-unknown/release/web-bg.wasm
+      - run: |
+          mkdir web/debug
+          cp target/wasm/web_bg.wasm web/debug/web_bg.wasm
+          cp target/wasm/web.js web/debug/background.js
+          cp index.html web/debug/index.html
       - uses: actions/upload-pages-artifact@v1
         with:
           path: ./web

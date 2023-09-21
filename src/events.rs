@@ -1,68 +1,20 @@
 //! `web-bg`-generated JavaScript events
 
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
 use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 	sync::{Once, OnceLock},
-	time::Duration,
 };
 
-use bevy::prelude::*;
+use bevy::{
+	prelude::*,
+	utils::{Duration, Instant},
+};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use web_sys::{CustomEvent, CustomEventInit, Event};
 
-#[cfg(not(target_arch = "wasm32"))]
-pub struct Time(Instant);
-
-#[cfg(target_arch = "wasm32")]
-pub struct Time(f64);
-
-impl Time {
-	/// Get the current time
-	#[cfg(not(target_arch = "wasm32"))]
-	#[must_use]
-	pub fn now() -> Self {
-		Self(Instant::now())
-	}
-
-	/// Get the current time
-	///
-	/// # Panics
-	/// This function panics if the `window` JS object or its `performance`
-	/// property are unavailable
-	#[cfg(target_arch = "wasm32")]
-	#[must_use]
-	pub fn now() -> Self {
-		let performance = web_sys::window()
-			.expect("JS `window` not available")
-			.performance()
-			.expect("JS `window.performance` not available");
-
-		Self(performance.now() / 1000.0)
-	}
-
-	/// Get the time elapsed since this `Time`
-	#[cfg(not(target_arch = "wasm32"))]
-	#[must_use]
-	pub fn elapsed(&self) -> Duration {
-		self.0.elapsed()
-	}
-
-	/// Get the time elapsed since this `Time`
-	///
-	/// # Panics
-	/// This function panics if `Time::now` panics
-	#[cfg(target_arch = "wasm32")]
-	#[must_use]
-	pub fn elapsed(&self) -> Duration {
-		Duration::from_secs_f64(Self::now().0 - self.0)
-	}
-}
-
-static STARTUP_TIME: OnceLock<Time> = OnceLock::new();
+static STARTUP_TIME: OnceLock<Instant> = OnceLock::new();
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RunEvent {
@@ -154,12 +106,8 @@ impl Display for RunEvent {
 /// Initialize event time measurements
 ///
 /// This should be called as early as possible during application startup
-///
-/// # Panics
-/// This function panics on `wasm32` if `Time::now` panics (if the `window` JS
-/// object or its `performance` property are unavailable)
 pub fn init() {
-	STARTUP_TIME.get_or_init(Time::now);
+	STARTUP_TIME.get_or_init(Instant::now);
 }
 
 /// Dispatch the `Loaded` event once
@@ -190,13 +138,13 @@ pub fn loaded(game: &'static str) {
 /// This should be called after startup systems have run
 ///
 /// # Panics
-/// This function panics if `Time::elapsed` panics or on `wasm32` if the
-/// `window` JS object or its `dispatchEvent` method are unavailable or throw
+/// This function panics on `wasm32` if the `window` JS object or its
+/// `dispatchEvent` method are unavailable or throw
 pub fn initialized() {
 	static ONCE: Once = Once::new();
 
 	ONCE.call_once(|| {
-		let dur = STARTUP_TIME.get().map(Time::elapsed);
+		let dur = STARTUP_TIME.get().map(Instant::elapsed);
 		let event = RunEvent::Initialized(dur);
 
 		#[cfg(target_arch = "wasm32")]
@@ -217,15 +165,15 @@ pub fn initialized() {
 /// it's called
 ///
 /// # Panics
-/// This function panics if `Time::elapsed` panics or on `wasm32` if the
-/// `window` JS object or its `dispatchEvent` method are unavailable or throw
+/// This function panics on `wasm32` if the `window` JS object or its
+/// `dispatchEvent` method are unavailable or throw
 pub fn started() {
 	static SKIP: Once = Once::new();
 	static ONCE: Once = Once::new();
 
 	if SKIP.is_completed() {
 		ONCE.call_once(|| {
-			let dur = STARTUP_TIME.get().map(Time::elapsed);
+			let dur = STARTUP_TIME.get().map(Instant::elapsed);
 			let event = RunEvent::Started(dur);
 
 			#[cfg(target_arch = "wasm32")]

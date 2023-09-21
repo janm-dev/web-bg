@@ -32,6 +32,10 @@ use bevy_screen_diagnostics::{
 use rand::seq::SliceRandom;
 #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
 use rlsf::SmallGlobalTlsf;
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+use tracing_subscriber::{fmt::format::Pretty, prelude::*};
+#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+use tracing_web::{performance_layer, MakeConsoleWriter};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -90,6 +94,22 @@ fn panic_hook(panic_info: &PanicInfo<'_>) {
 #[allow(clippy::missing_panics_doc)]
 pub fn main() {
 	std::panic::set_hook(Box::new(panic_hook));
+
+	#[cfg(all(feature = "console_log", target_arch = "wasm32"))]
+	{
+		let fmt_layer = tracing_subscriber::fmt::layer()
+			.with_ansi(false)
+			.with_timer(util::PerformanceTimer)
+			.with_writer(MakeConsoleWriter);
+
+		let perf_layer = performance_layer().with_details_from_fields(Pretty::default());
+
+		tracing_subscriber::registry()
+			.with(fmt_layer.with_filter(util::LogFilter))
+			.with(perf_layer.with_filter(util::LogFilter))
+			.init();
+	}
+
 	events::init();
 
 	let game = GAMES
@@ -106,6 +126,12 @@ pub fn main() {
 				mode: WindowMode::BorderlessFullscreen,
 				resizable: true,
 				fit_canvas_to_parent: true,
+				#[cfg(target_arch = "wasm32")]
+				resize_constraints: WindowResizeConstraints {
+					max_width: 4096.0 / 4.0,
+					max_height: 4096.0 / 4.0,
+					..default()
+				},
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
 					String::new()

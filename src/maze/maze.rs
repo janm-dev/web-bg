@@ -10,7 +10,7 @@ use rand::{
 	seq::{IteratorRandom, SliceRandom},
 	Rng, SeedableRng,
 };
-#[cfg(feature = "profile")]
+#[cfg(feature = "debug")]
 use tracing::instrument;
 
 use self::Direction::{Bottom, Left, Right, Top};
@@ -313,7 +313,7 @@ impl Default for Tile {
 }
 
 #[allow(clippy::too_many_lines)]
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn initialize(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
@@ -462,7 +462,7 @@ pub fn initialize(
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::type_complexity)]
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
 	maze: Res<Maze>,
@@ -528,7 +528,7 @@ pub fn spawn_visible_tiles(
 }
 
 #[allow(clippy::type_complexity)]
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn despawn_invisible_tiles(
 	mut commands: Commands,
 	tiles: Query<(Entity, &Transform), With<Tile>>,
@@ -592,7 +592,7 @@ fn next_cave(pos: UVec2, visited: &[UVec2], rng: &mut impl Rng) -> Option<(UVec2
 /// The type of `next_maze` and `next_cave`, where `R` is a `rand::Rng`
 type NextFn<R> = fn(UVec2, &[UVec2], &mut R) -> Option<(UVec2, Direction)>;
 
-#[cfg_attr(feature = "profile", instrument(skip_all, fields(kind)))]
+#[cfg_attr(feature = "debug", instrument(skip_all, fields(kind)))]
 fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	let us = |u32: u32| -> usize { u32.try_into().unwrap() };
 	let idx = |UVec2 { x, y }| usize::try_from(y * MAZE_SIZE.x + x).unwrap();
@@ -600,15 +600,16 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	let mut maze = vec![Tile::default(); us(MAZE_SIZE.x) * us(MAZE_SIZE.y)];
 
 	let mut pos = MAZE_SIZE / 2;
-	let mut visited = vec![pos];
+	let mut visited = Vec::with_capacity(us(MAZE_SIZE.x) * us(MAZE_SIZE.y));
+	visited.push(pos);
 	let mut route = vec![pos];
 
 	let (next, rooms): (NextFn<R>, usize) = if rng.gen_bool(0.75) {
-		#[cfg(feature = "profile")]
+		#[cfg(feature = "debug")]
 		tracing::Span::current().record("kind", "maze");
 		(next_maze, MAZE_ROOMS)
 	} else {
-		#[cfg(feature = "profile")]
+		#[cfg(feature = "debug")]
 		tracing::Span::current().record("kind", "cave");
 		(next_cave, 0)
 	};
@@ -630,6 +631,14 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 		route.push(next);
 
 		pos = next;
+
+		#[cfg(feature = "debug")]
+		if visited.len() % 100 == 0 {
+			debug!(
+				"gen_maze - {:.2}%",
+				100.0 * visited.len() as f32 / (MAZE_SIZE.x as f32 * MAZE_SIZE.y as f32)
+			);
+		}
 	}
 
 	for pos in (0..MAZE_SIZE.x)

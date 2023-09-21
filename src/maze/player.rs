@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-#[cfg(feature = "profile")]
+#[cfg(feature = "debug")]
 use tracing::instrument;
 
 use super::{maze, maze::Tile, PlayerInput};
@@ -28,7 +28,7 @@ pub struct Movement {
 	is_right: bool,
 }
 
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn initialize(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
@@ -103,7 +103,7 @@ pub fn initialize(
 		});
 }
 
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn movement(
 	time: Res<Time>,
 	input: Res<PlayerInput>,
@@ -128,7 +128,7 @@ pub fn movement(
 #[derive(Component, Deref, DerefMut)]
 pub struct FlickerTimer(Timer);
 
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn light_flicker(time: Res<Time>, mut query: Query<(&mut PointLight, &mut FlickerTimer)>) {
 	for (mut light, mut timer) in &mut query {
 		timer.tick(time.delta());
@@ -140,7 +140,7 @@ pub fn light_flicker(time: Res<Time>, mut query: Query<(&mut PointLight, &mut Fl
 	}
 }
 
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn collision(
 	mut player: Query<&mut Transform, With<Player>>,
 	tiles: Query<(&Transform, &Tile), Without<Player>>,
@@ -265,7 +265,7 @@ pub fn collision(
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
-#[cfg_attr(feature = "profile", instrument(skip_all))]
+#[cfg_attr(feature = "debug", instrument(skip_all))]
 pub fn animation(
 	time: Res<Time>,
 	mut query: Query<(
