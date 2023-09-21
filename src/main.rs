@@ -126,12 +126,6 @@ pub fn main() {
 				mode: WindowMode::BorderlessFullscreen,
 				resizable: true,
 				fit_canvas_to_parent: true,
-				#[cfg(target_arch = "wasm32")]
-				resize_constraints: WindowResizeConstraints {
-					max_width: 4096.0 / 4.0,
-					max_height: 4096.0 / 4.0,
-					..default()
-				},
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
 					String::new()
