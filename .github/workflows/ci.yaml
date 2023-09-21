@@ -6,11 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
+  check-wasm:
     strategy:
       matrix:
         features: ["default", "debug", "console_log", "debug,console_log"]
-        target: ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
     name: Check
     runs-on: ubuntu-latest
     steps:
@@ -18,9 +17,34 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          targets: ${{ matrix.target }}
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --target ${{ matrix.target }} --features ${{ matrix.features }}
+      - run: cargo check --target wasm32-unknown-unknown --features ${{ matrix.features }}
+
+  check-linux:
+    strategy:
+      matrix:
+        features:
+          [
+            "default",
+            "debug",
+            "profile",
+            "dynamic",
+            "debug,profile",
+            "debug,dynamic",
+            "profile,dynamic",
+            "debug,profile,dynamic",
+          ]
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: x86_64-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --target x86_64-unknown-linux-gnu --features ${{ matrix.features }}
 
   fmt:
     name: Format
@@ -35,12 +59,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly fmt --all -- --check
 
-  clippy:
+  clippy-wasm:
     strategy:
       matrix:
         features: ["default", "debug", "console_log", "debug,console_log"]
-        target: ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
-    name: Clippy
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -48,6 +71,32 @@ jobs:
         with:
           toolchain: nightly
           components: clippy
-          targets: ${{ matrix.target }}
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - run: cargo +nightly clippy --profile release-wasm --target ${{ matrix.target }} --features ${{ matrix.features }} -- --D warnings
+      - run: cargo +nightly clippy --target wasm32-unknown-unknown --features ${{ matrix.features }} -- --D warnings
+
+  clippy-linux:
+    strategy:
+      matrix:
+        features:
+          [
+            "default",
+            "debug",
+            "profile",
+            "dynamic",
+            "debug,profile",
+            "debug,dynamic",
+            "profile,dynamic",
+            "debug,profile,dynamic",
+          ]
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          components: clippy
+          targets: x86_64-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +nightly clippy --target x86_64-unknown-linux-gnu --features ${{ matrix.features }} -- --D warnings
