@@ -63,7 +63,7 @@ jobs:
     strategy:
       matrix:
         features: ["default", "debug", "console_log", "debug,console_log"]
-    name: Check
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -89,7 +89,7 @@ jobs:
             "profile,dynamic",
             "debug,profile,dynamic",
           ]
-    name: Check
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
