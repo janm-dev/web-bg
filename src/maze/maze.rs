@@ -556,20 +556,7 @@ fn next_maze(pos: UVec2, visited: &[UVec2], rng: &Rand) -> Option<(UVec2, Direct
 	rng.sample_iter(neighbors(pos).filter(|(p, _)| !visited.contains(p)))
 }
 
-/// Get the next tile in the maze for a modified version of the recursive
-/// backtracking algorithm, generating a more cave-like environment, though it
-/// may be a bit small
-fn next_cave(pos: UVec2, visited: &[UVec2], rng: &Rand) -> Option<(UVec2, Direction)> {
-	#[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-	rng.chance(0.999_f64.powi(visited.len() as i32))
-		.then(|| next_maze(pos, visited, rng))
-		.flatten()
-}
-
-/// The type of `next_maze` and `next_cave`, where `R` is a `rand::Rng`
-type NextFn<R> = fn(UVec2, &[UVec2], &R) -> Option<(UVec2, Direction)>;
-
-#[cfg_attr(feature = "debug", tracing::instrument(skip_all, fields(kind)))]
+#[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 fn gen_maze(rng: &Rand) -> Vec<Tile> {
 	let us = |u32: u32| -> usize { u32.try_into().unwrap() };
 	let idx = |UVec2 { x, y }| usize::try_from(y * MAZE_SIZE.x + x).unwrap();
@@ -581,18 +568,8 @@ fn gen_maze(rng: &Rand) -> Vec<Tile> {
 	visited.push(pos);
 	let mut route = vec![pos];
 
-	let (next, rooms): (NextFn<_>, usize) = if rng.chance(0.75) {
-		#[cfg(feature = "debug")]
-		tracing::Span::current().record("kind", "maze");
-		(next_maze, MAZE_ROOMS)
-	} else {
-		#[cfg(feature = "debug")]
-		tracing::Span::current().record("kind", "cave");
-		(next_cave, 0)
-	};
-
 	loop {
-		let Some((next, dir)) = next(pos, &visited, rng) else {
+		let Some((next, dir)) = next_maze(pos, &visited, rng) else {
 			pos = if let Some(p) = route.pop() {
 				p
 			} else {
@@ -622,7 +599,7 @@ fn gen_maze(rng: &Rand) -> Vec<Tile> {
 	for pos in rng
 		.sample_multiple_iter(
 			(0..MAZE_SIZE.x).flat_map(|x| (0..MAZE_SIZE.y).map(move |y| UVec2 { x, y })),
-			rooms,
+			MAZE_ROOMS,
 		)
 		.into_iter()
 		.chain([MAZE_SIZE / 2])
