@@ -12,6 +12,8 @@ use tracing_subscriber::{
 	fmt::{format::Writer, time::FormatTime},
 	layer::{Context, Filter},
 };
+use turborand::rng::AtomicRng;
+pub use turborand::TurboRand;
 
 /// Quickly declare minigames
 ///
@@ -40,6 +42,22 @@ macro_rules! games {
 			#[cfg(not(feature = $feat))]
 		)*
 		compile_error!("At least one minigame must be enabled");
+	}
+}
+
+/// Random number generator resource
+#[derive(Debug, Resource, Deref, DerefMut)]
+pub struct Rand(AtomicRng);
+
+impl Rand {
+	#[allow(clippy::new_without_default)]
+	#[must_use]
+	pub fn new() -> Self {
+		Self(AtomicRng::new())
+	}
+
+	pub const fn from_rng(rng: AtomicRng) -> Self {
+		Self(rng)
 	}
 }
 

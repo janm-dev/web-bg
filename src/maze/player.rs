@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 
 use super::{maze, maze::Tile, PlayerInput};
+use crate::util::{Rand, TurboRand};
 
 const TILE_SIZE: Vec2 = Vec2::new(24.0, 32.0);
 const TILE_AMOUNT_IDLE: usize = 10;
@@ -127,13 +128,17 @@ pub fn movement(
 pub struct FlickerTimer(Timer);
 
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
-pub fn light_flicker(time: Res<Time>, mut query: Query<(&mut PointLight, &mut FlickerTimer)>) {
+pub fn light_flicker(
+	time: Res<Time>,
+	rng: Res<Rand>,
+	mut query: Query<(&mut PointLight, &mut FlickerTimer)>,
+) {
 	for (mut light, mut timer) in &mut query {
 		timer.tick(time.delta());
 
 		if timer.just_finished() {
-			light.intensity = LIGHT_INITIAL_INTENSITY * (rand::random::<f32>() + 1.0) / 2.0;
-			timer.set_duration(Duration::from_secs_f64(rand::random::<f64>() / 5.0));
+			light.intensity = LIGHT_INITIAL_INTENSITY * ((*rng).f32() + 1.0) / 2.0;
+			timer.set_duration(Duration::from_secs_f64((*rng).f64() / 5.0));
 		}
 	}
 }

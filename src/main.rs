@@ -29,13 +29,13 @@ use bevy_embedded_assets::EmbeddedAssetPlugin;
 use bevy_screen_diagnostics::{
 	ScreenDiagnosticsPlugin, ScreenEntityDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin,
 };
-use rand::seq::SliceRandom;
 #[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
 use rlsf::SmallGlobalTlsf;
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
 use tracing_subscriber::{fmt::format::Pretty, prelude::*};
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
 use tracing_web::{performance_layer, MakeConsoleWriter};
+use util::{Rand, TurboRand};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -112,9 +112,8 @@ pub fn main() {
 
 	events::init();
 
-	let game = GAMES
-		.choose(&mut rand::thread_rng())
-		.expect("there are no games");
+	let rng = Rand::new();
+	let game = rng.sample(GAMES).expect("there are no games");
 
 	events::loaded(game.name);
 
@@ -147,6 +146,7 @@ pub fn main() {
 		.disable::<LogPlugin>();
 
 	app.insert_resource(ClearColor(Color::NONE))
+		.insert_resource(rng)
 		.insert_resource(Msaa::Sample4)
 		.add_plugins(default_plugins);
 

@@ -5,13 +5,9 @@ use std::{
 };
 
 use bevy::{prelude::*, window::PrimaryWindow};
-use rand::{
-	rngs::SmallRng,
-	seq::{IteratorRandom, SliceRandom},
-	Rng, SeedableRng,
-};
 
 use self::Direction::{Bottom, Left, Right, Top};
+use crate::util::{Rand, TurboRand};
 
 pub const MAZE_SIZE: UVec2 = UVec2::splat(128);
 pub const MAZE_ROOMS: usize = 128;
@@ -91,14 +87,7 @@ impl Maze {
 	}
 
 	/// Spawn the tile at `(x, y)` at the given location
-	pub fn spawn_tile(
-		&self,
-		x: u32,
-		y: u32,
-		loc: Vec2,
-		commands: &mut Commands,
-		rng: &mut impl Rng,
-	) {
+	pub fn spawn_tile(&self, x: u32, y: u32, loc: Vec2, commands: &mut Commands, rng: &Rand) {
 		let tile = self.get(x, y);
 
 		commands
@@ -133,13 +122,11 @@ impl Maze {
 				for sy in -2i8..=2 {
 					for sx in -2i8..=2 {
 						let texture = if is_fully_closed || is_edge(i, sx, sy, &self.tiles) {
-							self.wall
-								.choose(rng)
+							rng.sample(&self.wall)
 								.expect("there are no wall textures")
 								.clone()
 						} else {
-							self.floor
-								.choose(rng)
+							rng.sample(&self.floor)
 								.expect("there are no floor textures")
 								.clone()
 						};
@@ -315,11 +302,10 @@ impl Default for Tile {
 pub fn initialize(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
+	rng: Res<Rand>,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-	let mut rng = SmallRng::from_entropy();
-
 	let wall = asset_server.load("maze/cave-wall.png");
 	let floor = [
 		asset_server.load("maze/cave-floor-1.png"),
@@ -444,7 +430,7 @@ pub fn initialize(
 		..default()
 	});
 
-	let maze = gen_maze(&mut rng);
+	let maze = gen_maze(&rng);
 	let maze = Maze::new(
 		maze,
 		MAZE_SIZE.x,
@@ -464,6 +450,7 @@ pub fn initialize(
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
 	maze: Res<Maze>,
+	rng: Res<Rand>,
 	tiles: Query<&TilePos, With<Tile>>,
 	window: Query<&Window, (With<PrimaryWindow>, Without<Tile>, Without<Camera2d>)>,
 	camera: Query<&Transform, (With<Camera2d>, Changed<Transform>, Without<Tile>)>,
@@ -515,13 +502,7 @@ pub fn spawn_visible_tiles(
 		});
 
 	for (x, y, i) in new_tiles {
-		maze.spawn_tile(
-			x,
-			y,
-			tile_position(i as _),
-			&mut commands,
-			&mut rand::thread_rng(),
-		);
+		maze.spawn_tile(x, y, tile_position(i as _), &mut commands, &rng);
 	}
 }
 
@@ -571,27 +552,25 @@ fn neighbors(UVec2 { x, y }: UVec2) -> impl Iterator<Item = (UVec2, Direction)> 
 
 /// Get the next tile in the maze for the usual recursive backtracking
 /// algorithm
-fn next_maze(pos: UVec2, visited: &[UVec2], mut rng: &mut impl Rng) -> Option<(UVec2, Direction)> {
-	neighbors(pos)
-		.filter(|(p, _)| !visited.contains(p))
-		.choose(&mut rng)
+fn next_maze(pos: UVec2, visited: &[UVec2], rng: &Rand) -> Option<(UVec2, Direction)> {
+	rng.sample_iter(neighbors(pos).filter(|(p, _)| !visited.contains(p)))
 }
 
 /// Get the next tile in the maze for a modified version of the recursive
 /// backtracking algorithm, generating a more cave-like environment, though it
 /// may be a bit small
-fn next_cave(pos: UVec2, visited: &[UVec2], rng: &mut impl Rng) -> Option<(UVec2, Direction)> {
+fn next_cave(pos: UVec2, visited: &[UVec2], rng: &Rand) -> Option<(UVec2, Direction)> {
 	#[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-	rng.gen_bool(0.999_f64.powi(visited.len() as i32))
+	rng.chance(0.999_f64.powi(visited.len() as i32))
 		.then(|| next_maze(pos, visited, rng))
 		.flatten()
 }
 
 /// The type of `next_maze` and `next_cave`, where `R` is a `rand::Rng`
-type NextFn<R> = fn(UVec2, &[UVec2], &mut R) -> Option<(UVec2, Direction)>;
+type NextFn<R> = fn(UVec2, &[UVec2], &R) -> Option<(UVec2, Direction)>;
 
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all, fields(kind)))]
-fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
+fn gen_maze(rng: &Rand) -> Vec<Tile> {
 	let us = |u32: u32| -> usize { u32.try_into().unwrap() };
 	let idx = |UVec2 { x, y }| usize::try_from(y * MAZE_SIZE.x + x).unwrap();
 
@@ -602,7 +581,7 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	visited.push(pos);
 	let mut route = vec![pos];
 
-	let (next, rooms): (NextFn<R>, usize) = if rng.gen_bool(0.75) {
+	let (next, rooms): (NextFn<_>, usize) = if rng.chance(0.75) {
 		#[cfg(feature = "debug")]
 		tracing::Span::current().record("kind", "maze");
 		(next_maze, MAZE_ROOMS)
@@ -632,7 +611,7 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 
 		#[cfg(feature = "debug")]
 		#[allow(clippy::cast_precision_loss)]
-		if visited.len() % 100 == 0 {
+		if visited.len() % 512 == 0 {
 			debug!(
 				"gen_maze - {:.2}%",
 				100.0 * visited.len() as f32 / (MAZE_SIZE.x as f32 * MAZE_SIZE.y as f32)
@@ -640,9 +619,11 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 		}
 	}
 
-	for pos in (0..MAZE_SIZE.x)
-		.flat_map(|x| (0..MAZE_SIZE.y).map(move |y| UVec2 { x, y }))
-		.choose_multiple(&mut rng, rooms)
+	for pos in rng
+		.sample_multiple_iter(
+			(0..MAZE_SIZE.x).flat_map(|x| (0..MAZE_SIZE.y).map(move |y| UVec2 { x, y })),
+			rooms,
+		)
 		.into_iter()
 		.chain([MAZE_SIZE / 2])
 	{
