@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         features: ["default", "debug", "console_log", "debug,console_log"]
-    name: Check
+    name: Check - WASM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -35,7 +35,7 @@ jobs:
             "profile,dynamic",
             "debug,profile,dynamic",
           ]
-    name: Check
+    name: Check - x86-64 Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -66,7 +66,7 @@ jobs:
     strategy:
       matrix:
         features: ["default", "debug", "console_log", "debug,console_log"]
-    name: Clippy
+    name: Clippy - WASM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -92,7 +92,7 @@ jobs:
             "profile,dynamic",
             "debug,profile,dynamic",
           ]
-    name: Clippy
+    name: Clippy - x86-64 Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
