@@ -631,6 +631,7 @@ fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 		pos = next;
 
 		#[cfg(feature = "debug")]
+		#[allow(clippy::cast_precision_loss)]
 		if visited.len() % 100 == 0 {
 			debug!(
 				"gen_maze - {:.2}%",

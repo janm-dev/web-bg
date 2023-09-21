@@ -215,7 +215,7 @@ pub struct LogFilter;
 
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
 impl LogFilter {
-	fn is_enabled(&self, meta: &Metadata<'_>) -> bool {
+	fn is_enabled(meta: &Metadata<'_>) -> bool {
 		let path = meta.module_path().unwrap_or("");
 		if path.starts_with("wgpu") {
 			meta.level() <= &Level::ERROR
@@ -232,11 +232,11 @@ impl LogFilter {
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
 impl<S> Filter<S> for LogFilter {
 	fn enabled(&self, meta: &Metadata<'_>, _: &Context<'_, S>) -> bool {
-		self.is_enabled(meta)
+		Self::is_enabled(meta)
 	}
 
 	fn callsite_enabled(&self, meta: &'static Metadata<'static>) -> Interest {
-		if self.is_enabled(meta) {
+		if Self::is_enabled(meta) {
 			Interest::always()
 		} else {
 			Interest::never()
