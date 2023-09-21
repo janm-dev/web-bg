@@ -10,8 +10,6 @@ use rand::{
 	seq::{IteratorRandom, SliceRandom},
 	Rng, SeedableRng,
 };
-#[cfg(feature = "debug")]
-use tracing::instrument;
 
 use self::Direction::{Bottom, Left, Right, Top};
 
@@ -313,7 +311,7 @@ impl Default for Tile {
 }
 
 #[allow(clippy::too_many_lines)]
-#[cfg_attr(feature = "debug", instrument(skip_all))]
+#[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn initialize(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
@@ -462,7 +460,7 @@ pub fn initialize(
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::type_complexity)]
-#[cfg_attr(feature = "debug", instrument(skip_all))]
+#[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
 	maze: Res<Maze>,
@@ -528,7 +526,7 @@ pub fn spawn_visible_tiles(
 }
 
 #[allow(clippy::type_complexity)]
-#[cfg_attr(feature = "debug", instrument(skip_all))]
+#[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn despawn_invisible_tiles(
 	mut commands: Commands,
 	tiles: Query<(Entity, &Transform), With<Tile>>,
@@ -592,7 +590,7 @@ fn next_cave(pos: UVec2, visited: &[UVec2], rng: &mut impl Rng) -> Option<(UVec2
 /// The type of `next_maze` and `next_cave`, where `R` is a `rand::Rng`
 type NextFn<R> = fn(UVec2, &[UVec2], &mut R) -> Option<(UVec2, Direction)>;
 
-#[cfg_attr(feature = "debug", instrument(skip_all, fields(kind)))]
+#[cfg_attr(feature = "debug", tracing::instrument(skip_all, fields(kind)))]
 fn gen_maze<R: Rng>(mut rng: &mut R) -> Vec<Tile> {
 	let us = |u32: u32| -> usize { u32.try_into().unwrap() };
 	let idx = |UVec2 { x, y }| usize::try_from(y * MAZE_SIZE.x + x).unwrap();
