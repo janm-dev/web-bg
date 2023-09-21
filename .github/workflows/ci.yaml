@@ -44,6 +44,9 @@ jobs:
           toolchain: stable
           targets: x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@v2
+      - run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - run: cargo check --target x86_64-unknown-linux-gnu --features ${{ matrix.features }}
 
   fmt:
@@ -99,4 +102,7 @@ jobs:
           components: clippy
           targets: x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@v2
+      - run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - run: cargo +nightly clippy --target x86_64-unknown-linux-gnu --features ${{ matrix.features }} -- --D warnings
