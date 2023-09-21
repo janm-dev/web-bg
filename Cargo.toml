@@ -20,6 +20,7 @@ default = [
 ]
 dynamic = ["bevy/dynamic_linking"]
 debug = [
+	"dep:tracing",
 	"dep:bevy-debug-text-overlay",
 	"dep:bevy_screen_diagnostics",
 ]
@@ -27,7 +28,6 @@ profile = [
 	"debug",
 	"bevy/trace",
 	"bevy/trace_tracy",
-	"dep:tracing",
 	"dep:tracing-tracy",
 	"dep:tracy-client",
 	"dep:tracy-client-sys",
