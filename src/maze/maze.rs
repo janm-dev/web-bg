@@ -100,7 +100,7 @@ impl Maze {
 		y: u32,
 		loc: Vec2,
 		commands: &mut Commands,
-		asset_server: &mut AssetServer,
+		asset_server: &AssetServer,
 		texture_atlases: &mut Assets<TextureAtlas>,
 		rng: &Rand,
 	) {
@@ -448,7 +448,7 @@ pub fn initialize(
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
-	mut asset_server: ResMut<AssetServer>,
+	asset_server: Res<AssetServer>,
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	maze: Res<Maze>,
 	rng: Res<Rand>,
@@ -504,7 +504,7 @@ pub fn spawn_visible_tiles(
 			y,
 			tile_position(i as _),
 			&mut commands,
-			&mut asset_server,
+			&asset_server,
 			&mut texture_atlases,
 			&rng,
 		);

@@ -14,7 +14,7 @@ pub struct Food;
 
 pub fn spawn(
 	builder: &mut ChildBuilder,
-	asset_server: &mut AssetServer,
+	asset_server: &AssetServer,
 	texture_atlases: &mut Assets<TextureAtlas>,
 	rng: &Rand,
 ) {
