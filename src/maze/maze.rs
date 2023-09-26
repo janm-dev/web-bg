@@ -1,10 +1,21 @@
 use std::{
+	array,
 	f32::consts::PI,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	ops::Neg,
 };
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+	prelude::*,
+	render::{
+		render_resource::{
+			Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+		},
+		texture::ImageSampler,
+	},
+	window::PrimaryWindow,
+};
+use image::{imageops, load_from_memory, RgbaImage};
 
 use self::Direction::{Bottom, Left, Right, Top};
 use crate::util::{Rand, TurboRand};
@@ -24,8 +35,7 @@ pub struct Maze {
 	width: u32,
 	height: u32,
 	pub tiles: Box<[Tile]>,
-	wall: Box<[Handle<StandardMaterial>]>,
-	floor: Box<[Handle<StandardMaterial>]>,
+	textures: Box<[Handle<StandardMaterial>; 256]>,
 	wall_mesh: Handle<Mesh>,
 	floor_mesh: Handle<Mesh>,
 	wall_material: Handle<StandardMaterial>,
@@ -41,15 +51,12 @@ impl Maze {
 		maze: impl Into<Box<[Tile]>>,
 		width: u32,
 		height: u32,
-		wall: impl Into<Box<[Handle<StandardMaterial>]>>,
-		floor: impl Into<Box<[Handle<StandardMaterial>]>>,
+		textures: Box<[Handle<StandardMaterial>; 256]>,
 		wall_mesh: Handle<Mesh>,
 		floor_mesh: Handle<Mesh>,
 		wall_material: Handle<StandardMaterial>,
 	) -> Self {
 		let tiles = maze.into();
-		let wall = wall.into();
-		let floor = floor.into();
 
 		assert_eq!(
 			width * height,
@@ -61,8 +68,7 @@ impl Maze {
 			width,
 			height,
 			tiles,
-			wall,
-			floor,
+			textures,
 			wall_mesh,
 			floor_mesh,
 			wall_material,
@@ -87,11 +93,15 @@ impl Maze {
 	}
 
 	/// Spawn the tile at `(x, y)` at the given location
-	pub fn spawn_tile(&self, x: u32, y: u32, loc: Vec2, commands: &mut Commands, rng: &Rand) {
+	pub fn spawn_tile(&self, x: u32, y: u32, loc: Vec2, commands: &mut Commands) {
 		let tile = self.get(x, y);
 
+		let ti = tile_bits(self.idx(x, y), &self.tiles);
+
 		commands
-			.spawn((tile, TilePos { x, y }, SpatialBundle {
+			.spawn((tile, TilePos { x, y }, PbrBundle {
+				mesh: self.floor_mesh.clone(),
+				material: self.textures[ti as usize].clone(),
 				transform: Transform {
 					translation: Vec3 {
 						x: loc.x,
@@ -104,8 +114,6 @@ impl Maze {
 				..default()
 			}))
 			.with_children(|builder| {
-				let i = self.idx(x, y);
-
 				let is_fully_open = tile.is_open(Top)
 					&& tile.is_open(Right)
 					&& tile.is_open(Bottom)
@@ -117,35 +125,6 @@ impl Maze {
 
 				if !(is_fully_closed || is_fully_open) {
 					self.spawn_tile_walls(builder, tile);
-				}
-
-				for sy in -2i8..=2 {
-					for sx in -2i8..=2 {
-						let texture = if is_fully_closed || is_edge(i, sx, sy, &self.tiles) {
-							rng.sample(&self.wall)
-								.expect("there are no wall textures")
-								.clone()
-						} else {
-							rng.sample(&self.floor)
-								.expect("there are no floor textures")
-								.clone()
-						};
-
-						builder.spawn(PbrBundle {
-							mesh: self.floor_mesh.clone(),
-							material: texture.clone(),
-							transform: Transform {
-								translation: Vec3 {
-									x: SUBTILE_SIZE.x * SUBTILE_SCALE * f32::from(sx),
-									y: SUBTILE_SIZE.y * SUBTILE_SCALE * f32::from(sy),
-									z: 0.0,
-								},
-								scale: Vec3::splat(SUBTILE_SCALE),
-								..default()
-							},
-							..default()
-						});
-					}
 				}
 			});
 	}
@@ -228,6 +207,86 @@ impl Debug for Maze {
 	}
 }
 
+#[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
+fn gen_tile_textures(
+	wall: &[&[u8]],
+	floor: &[&[u8]],
+	images: &mut Assets<Image>,
+	rng: &Rand,
+) -> [Handle<Image>; 256] {
+	let mut res = array::from_fn::<_, 256, _>(|_| None);
+
+	let wall = wall
+		.iter()
+		.map(|data| load_from_memory(data).expect("invalid image").into_rgba8())
+		.collect::<Vec<_>>();
+
+	let floor = floor
+		.iter()
+		.map(|data| load_from_memory(data).expect("invalid image").into_rgba8())
+		.collect::<Vec<_>>();
+
+	for bits in 0u8..=255u8 {
+		let tile = Tile(bits & 0b1111);
+
+		let is_edge = |sx, sy| match (sx, sy) {
+			(1..=3, 0) => tile.is_closed(Top),
+			(4, 1..=3) => tile.is_closed(Right),
+			(1..=3, 4) => tile.is_closed(Bottom),
+			(0, 1..=3) => tile.is_closed(Left),
+			(0, 0) => tile.is_closed(Top) || tile.is_closed(Left) || (bits & 0b1000_0000 != 0),
+			(4, 0) => tile.is_closed(Top) || tile.is_closed(Right) || (bits & 0b0100_0000 != 0),
+			(0, 4) => tile.is_closed(Bottom) || tile.is_closed(Left) || (bits & 0b0010_0000 != 0),
+			(4, 4) => tile.is_closed(Bottom) || tile.is_closed(Right) || (bits & 0b0001_0000 != 0),
+			_ => false,
+		};
+
+		let is_fully_closed = tile.is_closed(Top)
+			&& tile.is_closed(Right)
+			&& tile.is_closed(Bottom)
+			&& tile.is_closed(Left);
+
+		let mut image = RgbaImage::from_raw(5 * 16, 5 * 16, vec![0; 4 * 5 * 16 * 5 * 16]).unwrap();
+
+		for sy in 0..5 {
+			for sx in 0..5 {
+				let subimage = if is_fully_closed || is_edge(sx, sy) {
+					rng.sample(&wall).expect("there are no wall images")
+				} else {
+					rng.sample(&floor).expect("there are no floor images")
+				};
+
+				imageops::overlay(&mut image, subimage, sx * 16, sy * 16);
+			}
+		}
+
+		let handle = images.add(Image {
+			data: image.into_vec(),
+			texture_descriptor: TextureDescriptor {
+				label: None,
+				size: Extent3d {
+					width: 5 * 16,
+					height: 5 * 16,
+					..default()
+				},
+				dimension: TextureDimension::D2,
+				format: TextureFormat::Rgba8UnormSrgb,
+				mip_level_count: 1,
+				sample_count: 1,
+				usage: TextureUsages::TEXTURE_BINDING
+					| TextureUsages::COPY_DST
+					| TextureUsages::RENDER_ATTACHMENT,
+				view_formats: &[],
+			},
+			sampler_descriptor: ImageSampler::Default,
+			texture_view_descriptor: None,
+		});
+		res[bits as usize] = Some(handle);
+	}
+
+	res.map(|o| o.expect("image creation failed"))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
 	Top,
@@ -297,124 +356,21 @@ impl Default for Tile {
 	}
 }
 
-#[allow(clippy::too_many_lines)]
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn initialize(
 	mut commands: Commands,
-	asset_server: Res<AssetServer>,
 	rng: Res<Rand>,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<StandardMaterial>>,
+	mut images: ResMut<Assets<Image>>,
 ) {
-	let wall = asset_server.load("maze/cave-wall.png");
+	let wall = [&include_bytes!("../../assets/maze/cave-wall.png")[..]];
 	let floor = [
-		asset_server.load("maze/cave-floor-1.png"),
-		asset_server.load("maze/cave-floor-2.png"),
+		&include_bytes!("../../assets/maze/cave-floor-1.png")[..],
+		&include_bytes!("../../assets/maze/cave-floor-2.png")[..],
 	];
 
-	let wall = [
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(wall.clone()),
-			reflectance: 0.1,
-			perceptual_roughness: 1.0,
-			depth_map: Some(wall.clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(wall.clone()),
-			normal_map_texture: Some(wall.clone()),
-			unlit: false,
-			..default()
-		}),
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(wall.clone()),
-			reflectance: 0.1,
-			perceptual_roughness: 0.8,
-			depth_map: Some(wall.clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(wall.clone()),
-			normal_map_texture: Some(wall.clone()),
-			unlit: false,
-			..default()
-		}),
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(wall.clone()),
-			reflectance: 0.2,
-			perceptual_roughness: 1.0,
-			depth_map: Some(wall.clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(wall.clone()),
-			normal_map_texture: Some(wall.clone()),
-			unlit: false,
-			..default()
-		}),
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(wall.clone()),
-			reflectance: 0.2,
-			perceptual_roughness: 0.8,
-			depth_map: Some(wall.clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(wall.clone()),
-			normal_map_texture: Some(wall),
-			unlit: false,
-			..default()
-		}),
-	];
-
-	let floor = [
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(floor[0].clone()),
-			reflectance: 0.1,
-			perceptual_roughness: 1.0,
-			depth_map: Some(floor[0].clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(floor[0].clone()),
-			normal_map_texture: Some(floor[0].clone()),
-			unlit: false,
-			..default()
-		}),
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(floor[1].clone()),
-			reflectance: 0.1,
-			perceptual_roughness: 1.0,
-			depth_map: Some(floor[1].clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(floor[1].clone()),
-			normal_map_texture: Some(floor[1].clone()),
-			unlit: false,
-			..default()
-		}),
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(floor[0].clone()),
-			reflectance: 0.1,
-			perceptual_roughness: 0.85,
-			depth_map: Some(floor[0].clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(floor[0].clone()),
-			normal_map_texture: Some(floor[0].clone()),
-			unlit: false,
-			..default()
-		}),
-		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
-			base_color_texture: Some(floor[1].clone()),
-			reflectance: 0.1,
-			perceptual_roughness: 0.85,
-			depth_map: Some(floor[1].clone()),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
-			emissive_texture: Some(floor[1].clone()),
-			normal_map_texture: Some(floor[1].clone()),
-			unlit: false,
-			..default()
-		}),
-	];
-
-	let floor_mesh = meshes.add(Mesh::from(shape::Quad::new(SUBTILE_SIZE)));
+	let floor_mesh = meshes.add(Mesh::from(shape::Quad::new(TILE_SIZE)));
 	let wall_mesh = meshes.add(Mesh::from(shape::Box::new(
 		SUBTILE_SIZE.x.mul_add(SUBTILE_SCALE, TILE_SIZE.x),
 		SUBTILE_SIZE.y * SUBTILE_SCALE,
@@ -431,12 +387,25 @@ pub fn initialize(
 	});
 
 	let maze = gen_maze(&rng);
+
+	let textures = gen_tile_textures(&wall, &floor, &mut images, &rng).map(|h| {
+		materials.add(StandardMaterial {
+			base_color: Color::GRAY,
+			base_color_texture: Some(h.clone()),
+			reflectance: rng.f32().mul_add(0.1, 0.1),
+			perceptual_roughness: rng.f32().mul_add(0.15, 0.85),
+			emissive: Color::hsl(210.0, 0.3, 0.3),
+			emissive_texture: Some(h),
+			unlit: false,
+			..default()
+		})
+	});
+
 	let maze = Maze::new(
 		maze,
 		MAZE_SIZE.x,
 		MAZE_SIZE.y,
-		wall,
-		floor,
+		Box::new(textures),
 		wall_mesh,
 		floor_mesh,
 		wall_material,
@@ -450,7 +419,6 @@ pub fn initialize(
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
 	maze: Res<Maze>,
-	rng: Res<Rand>,
 	tiles: Query<&TilePos, With<Tile>>,
 	window: Query<&Window, (With<PrimaryWindow>, Without<Tile>, Without<Camera2d>)>,
 	camera: Query<&Transform, (With<Camera2d>, Changed<Transform>, Without<Tile>)>,
@@ -502,7 +470,7 @@ pub fn spawn_visible_tiles(
 		});
 
 	for (x, y, i) in new_tiles {
-		maze.spawn_tile(x, y, tile_position(i as _), &mut commands, &rng);
+		maze.spawn_tile(x, y, tile_position(i as _), &mut commands);
 	}
 }
 
@@ -618,7 +586,7 @@ fn gen_maze(rng: &Rand) -> Vec<Tile> {
 	maze
 }
 
-fn is_edge(i: usize, x: i8, y: i8, maze: &[Tile]) -> bool {
+fn tile_bits(i: usize, maze: &[Tile]) -> u8 {
 	let maze_size = (
 		usize::try_from(MAZE_SIZE.x).unwrap(),
 		usize::try_from(MAZE_SIZE.y).unwrap(),
@@ -629,40 +597,33 @@ fn is_edge(i: usize, x: i8, y: i8, maze: &[Tile]) -> bool {
 		|| i % maze_size.0 == 0
 		|| i % maze_size.0 == maze_size.0 - 1;
 
-	match (x, y) {
-		(-1..=1, -1..=1) => false,
-		(-1..=1, 2) => tile.is_closed(Top),
-		(2, -1..=1) => tile.is_closed(Right),
-		(-1..=1, -2) => tile.is_closed(Bottom),
-		(-2, -1..=1) => tile.is_closed(Left),
-		(-2, 2) => {
-			tile.is_closed(Top)
-				|| tile.is_closed(Left)
-				|| (!tile_is_edge
-					&& (maze[i.saturating_sub(1)].is_closed(Top)
-						|| maze[i.saturating_add(maze_size.0)].is_closed(Left)))
+	let mut res = tile.0;
+
+	if !tile_is_edge {
+		if maze[i.saturating_sub(1)].is_closed(Top)
+			|| maze[i.saturating_add(maze_size.0)].is_closed(Left)
+		{
+			res |= 0b1000_0000;
 		}
-		(2, 2) => {
-			tile.is_closed(Top)
-				|| tile.is_closed(Right)
-				|| (!tile_is_edge
-					&& (maze[i.saturating_add(1)].is_closed(Top)
-						|| maze[i.saturating_add(maze_size.0)].is_closed(Right)))
+
+		if maze[i.saturating_add(1)].is_closed(Top)
+			|| maze[i.saturating_add(maze_size.0)].is_closed(Right)
+		{
+			res |= 0b0100_0000;
 		}
-		(-2, -2) => {
-			tile.is_closed(Bottom)
-				|| tile.is_closed(Left)
-				|| (!tile_is_edge
-					&& (maze[i.saturating_sub(1)].is_closed(Bottom)
-						|| maze[i.saturating_sub(maze_size.0)].is_closed(Left)))
+
+		if maze[i.saturating_sub(1)].is_closed(Bottom)
+			|| maze[i.saturating_sub(maze_size.0)].is_closed(Left)
+		{
+			res |= 0b0010_0000;
 		}
-		(2, -2) => {
-			tile.is_closed(Bottom)
-				|| tile.is_closed(Right)
-				|| (!tile_is_edge
-					&& (maze[i.saturating_add(1)].is_closed(Bottom)
-						|| maze[i.saturating_sub(maze_size.0)].is_closed(Right)))
+
+		if maze[i.saturating_add(1)].is_closed(Bottom)
+			|| maze[i.saturating_sub(maze_size.0)].is_closed(Right)
+		{
+			res |= 0b0001_0000;
 		}
-		_ => false,
 	}
+
+	res
 }
