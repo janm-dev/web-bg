@@ -12,7 +12,12 @@ mod player;
 pub fn start(app: &mut App) {
 	app.add_systems(
 		Startup,
-		(player::initialize, maze::initialize, camera_initialization),
+		(
+			player::initialize,
+			maze::initialize,
+			camera_initialization,
+			food::init_ui,
+		),
 	);
 
 	app.add_systems(PreUpdate, input);
@@ -29,6 +34,7 @@ pub fn start(app: &mut App) {
 			maze::despawn_invisible_tiles,
 			food::eat,
 			food::dim,
+			food::update_ui,
 		),
 	);
 	app.insert_resource(PlayerInput::default());

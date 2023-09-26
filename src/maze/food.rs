@@ -1,3 +1,5 @@
+use std::fmt::{Display as FmtDisplay, Formatter, Result as FmtResult, Write};
+
 use bevy::prelude::*;
 
 use super::{maze::Tile, player::Player};
@@ -11,6 +13,27 @@ pub const EATING_THRESHOLD: f32 = 1024.0;
 
 #[derive(Debug, Component)]
 pub struct Food;
+
+#[derive(Debug, Default, Component)]
+pub struct FoodEaten(u16);
+
+impl FoodEaten {
+	pub fn incr(&mut self) {
+		self.0 = self.0.saturating_add(1);
+	}
+}
+
+impl FmtDisplay for FoodEaten {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		let val = self.0.saturating_sub(1);
+
+		if val > 99 {
+			f.write_char('+')
+		} else {
+			f.write_fmt(format_args!("{val}"))
+		}
+	}
+}
 
 pub fn spawn(
 	builder: &mut ChildBuilder,
@@ -35,10 +58,57 @@ pub fn spawn(
 	}));
 }
 
+pub fn init_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+	let plate = asset_server.load("maze/plate.png");
+
+	commands
+		.spawn(ImageBundle {
+			background_color: Color::WHITE.into(),
+			style: Style {
+				position_type: PositionType::Absolute,
+				bottom: Val::Percent(5.0),
+				right: Val::Percent(5.0),
+				width: Val::Px(128.0),
+				height: Val::Px(128.0),
+				display: Display::Flex,
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::Center,
+				..default()
+			},
+			image: UiImage {
+				texture: plate,
+				..default()
+			},
+			..default()
+		})
+		.with_children(|builder| {
+			builder.spawn((
+				TextBundle::from_section("0", TextStyle {
+					font: asset_server.load("fonts/pixel.ttf"),
+					font_size: 64.0,
+					color: Color::BLACK,
+				})
+				.with_text_alignment(TextAlignment::Center)
+				.with_style(Style {
+					position_type: PositionType::Relative,
+					..default()
+				}),
+				FoodEaten::default(),
+			));
+		});
+}
+
+pub fn update_ui(mut counter: Query<(&FoodEaten, &mut Text), Changed<FoodEaten>>) {
+	if let Ok((counter, mut text)) = counter.get_single_mut() {
+		text.sections[0].value = counter.to_string();
+	};
+}
+
 pub fn eat(
 	mut commands: Commands,
 	player: Query<&GlobalTransform, (With<Player>, Without<Food>)>,
 	food: Query<(&GlobalTransform, &Parent, Entity), With<Food>>,
+	mut counter: Query<&mut FoodEaten>,
 	mut tiles: Query<&mut Tile>,
 ) {
 	let player = player.single().translation();
@@ -58,6 +128,7 @@ pub fn eat(
 			.set_food(false);
 
 		commands.entity(entity).despawn();
+		counter.single_mut().incr();
 	}
 }
 
