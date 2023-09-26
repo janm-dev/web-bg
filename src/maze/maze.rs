@@ -21,7 +21,7 @@ use self::Direction::{Bottom, Left, Right, Top};
 use crate::util::{Rand, TurboRand};
 
 pub const MAZE_SIZE: UVec2 = UVec2::splat(128);
-pub const MAZE_ROOMS: usize = 128;
+pub const MAZE_ROOMS: usize = 1024;
 
 pub const TILE_SIZE: Vec2 = Vec2::new(32.0, 32.0);
 pub const TILE_SCALE: f32 = 5.0;
@@ -93,7 +93,17 @@ impl Maze {
 	}
 
 	/// Spawn the tile at `(x, y)` at the given location
-	pub fn spawn_tile(&self, x: u32, y: u32, loc: Vec2, commands: &mut Commands) {
+	#[allow(clippy::too_many_arguments)]
+	pub fn spawn_tile(
+		&self,
+		x: u32,
+		y: u32,
+		loc: Vec2,
+		commands: &mut Commands,
+		asset_server: &mut AssetServer,
+		texture_atlases: &mut Assets<TextureAtlas>,
+		rng: &Rand,
+	) {
 		let tile = self.get(x, y);
 
 		let ti = tile_bits(self.idx(x, y), &self.tiles);
@@ -125,6 +135,10 @@ impl Maze {
 
 				if !(is_fully_closed || is_fully_open) {
 					self.spawn_tile_walls(builder, tile);
+				}
+
+				if tile.has_food() {
+					super::food::spawn(builder, asset_server, texture_atlases, rng);
 				}
 			});
 	}
@@ -322,13 +336,25 @@ impl Tile {
 		Self(0b1111)
 	}
 
+	pub fn set_food(&mut self, has_food: bool) -> &mut Self {
+		if self.has_food() != has_food {
+			self.0 ^= 0b0001_0000;
+		}
+
+		self
+	}
+
+	pub const fn has_food(self) -> bool {
+		self.0 & 0b0001_0000 != 0
+	}
+
 	/// Open the given `side` of this Tile
 	pub fn open(&mut self, side: Direction) -> &mut Self {
 		match side {
-			Direction::Top => self.0 &= 0b0111,
-			Direction::Right => self.0 &= 0b1011,
-			Direction::Bottom => self.0 &= 0b1101,
-			Direction::Left => self.0 &= 0b1110,
+			Direction::Top => self.0 &= 0b1111_0111,
+			Direction::Right => self.0 &= 0b1111_1011,
+			Direction::Bottom => self.0 &= 0b1111_1101,
+			Direction::Left => self.0 &= 0b1111_1110,
 		}
 
 		self
@@ -414,11 +440,18 @@ pub fn initialize(
 	commands.insert_resource(maze);
 }
 
-#[allow(clippy::cast_possible_truncation, clippy::type_complexity)]
+#[allow(
+	clippy::cast_possible_truncation,
+	clippy::type_complexity,
+	clippy::too_many_arguments
+)]
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
+	mut asset_server: ResMut<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	maze: Res<Maze>,
+	rng: Res<Rand>,
 	tiles: Query<&TilePos, With<Tile>>,
 	window: Query<&Window, (With<PrimaryWindow>, Without<Tile>, Without<Camera2d>)>,
 	camera: Query<&Transform, (With<Camera2d>, Changed<Transform>, Without<Tile>)>,
@@ -445,12 +478,8 @@ pub fn spawn_visible_tiles(
 
 	let existing_tiles = tiles.iter().copied().collect::<Vec<_>>();
 
-	let new_tiles = maze
-		.tiles
-		.iter()
-		.copied()
-		.enumerate()
-		.filter(|&(i, _)| {
+	let new_tiles = (0..maze.tiles.len())
+		.filter(|&i| {
 			let Vec2 { x, y } = tile_position(i as u32);
 			let width = TILE_SIZE.x.mul_add(TILE_SCALE * 2.0, window.width());
 			let height = TILE_SIZE.y.mul_add(TILE_SCALE * 2.0, window.height());
@@ -460,7 +489,7 @@ pub fn spawn_visible_tiles(
 				(camera.translation.y - height / 2.0)..(camera.translation.y + height / 2.0);
 			x_extent.contains(&x) && y_extent.contains(&y)
 		})
-		.filter_map(|(i, _)| {
+		.filter_map(|i| {
 			let pos = TilePos {
 				x: i as u32 % maze.width,
 				y: i as u32 / maze.width,
@@ -470,7 +499,15 @@ pub fn spawn_visible_tiles(
 		});
 
 	for (x, y, i) in new_tiles {
-		maze.spawn_tile(x, y, tile_position(i as _), &mut commands);
+		maze.spawn_tile(
+			x,
+			y,
+			tile_position(i as _),
+			&mut commands,
+			&mut asset_server,
+			&mut texture_atlases,
+			&rng,
+		);
 	}
 }
 
@@ -576,7 +613,8 @@ fn gen_maze(rng: &Rand) -> Vec<Tile> {
 			.open(Direction::Top)
 			.open(Direction::Right)
 			.open(Direction::Bottom)
-			.open(Direction::Left);
+			.open(Direction::Left)
+			.set_food(true);
 
 		for (pos, dir) in neighbors(pos) {
 			maze[idx(pos)].open(-dir);
@@ -597,7 +635,7 @@ fn tile_bits(i: usize, maze: &[Tile]) -> u8 {
 		|| i % maze_size.0 == 0
 		|| i % maze_size.0 == maze_size.0 - 1;
 
-	let mut res = tile.0;
+	let mut res = tile.0 & 0b1111;
 
 	if !tile_is_edge {
 		if maze[i.saturating_sub(1)].is_closed(Top)

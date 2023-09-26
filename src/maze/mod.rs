@@ -4,6 +4,7 @@ use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*, window::Pri
 
 use crate::util::{input, PlayerInput};
 
+mod food;
 #[allow(clippy::module_inception)]
 mod maze;
 mod player;
@@ -26,6 +27,8 @@ pub fn start(app: &mut App) {
 			player::collision.after(player::movement),
 			maze::spawn_visible_tiles,
 			maze::despawn_invisible_tiles,
+			food::eat,
+			food::dim,
 		),
 	);
 	app.insert_resource(PlayerInput::default());
