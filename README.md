@@ -56,10 +56,16 @@ The `console_log` feature does nothing when *not* compiling for the web.
 
 ## Attribution
 
-In addition to Cargo dependencies, the following open-source resources are used as part of `web-bg`:
+In addition to Cargo dependencies, the following additional resources are used as part of `web-bg`:
 
-- The [Roboto font](https://fonts.google.com/specimen/Roboto), used under the terms of the [Apache 2.0 license](./licenses/roboto.txt) in `assets/fonts/roboto.ttf` and `assets/fonts/roboto-bold.ttf`
-- [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css), used under the terms of [the MIT license](./about.hbs#this-document) for styling in `about.hbs` (and the html file generated from it)
+- Maze Cave (in `assets/maze/`):
+  - Player character based on ["Reaper" by SamuelLee](https://samuellee.itch.io/reaper-animated-pixel-art) (`player-idle.png` and `player-walking.png`)
+  - Player's torch from ["Cave Explorer" by SamuelLee](https://samuellee.itch.io/cave-explorer-animated-pixel-art) (`player-idle.png` and `player-walking.png`)
+  - Cave tiles based on ["Textures" by PiiiXL](https://piiixl.itch.io/textures) (`cave-floor-1.png`, `cave-floor-2.png`, and `cave-wall.png`)
+  - Food from ["Pixel Food" by ghostpixxells](https://ghostpixxells.itch.io/pixelfood) (`food.png`)
+- Miscellaneous:
+  - The [Roboto font](https://fonts.google.com/specimen/Roboto), used under the terms of the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0) in `assets/fonts/roboto.ttf` and `assets/fonts/roboto-bold.ttf`
+  - [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css), used under the terms of [the MIT license](./about.hbs#this-document) for styling in `about.hbs` (and the html file generated from it)
 
 For Cargo dependencies, you can use [`cargo about generate -o ATTRIBUTION.html --all-features about.hbs`](https://github.com/EmbarkStudios/cargo-about) to generate an html file with information about dependencies and their licenses.
 
