@@ -73,7 +73,7 @@ web-sys = { version = "0.3.66", features = [
 	"CustomEvent",
 	"CustomEventInit",
 ] }
-wasm-bindgen = "0.2.89"
+wasm-bindgen = "0.2.90"
 
 [target.'cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))'.dependencies]
 rlsf = "0.2.1"
