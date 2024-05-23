@@ -1,35 +1,33 @@
+[graph]
+all-features = true
 targets = [
-	{ triple = "wasm32-unknown-unknown" },
-	{ triple = "x86_64-unknown-linux-gnu" },
-	{ triple = "x86_64-pc-windows-msvc" },
-	{ triple = "aarch64-unknown-linux-gnu" },
+	"x86_64-unknown-linux-gnu",
+	"aarch64-unknown-linux-gnu",
+	"x86_64-unknown-linux-musl",
+	"aarch64-apple-darwin",
+	"x86_64-apple-darwin",
+	"x86_64-pc-windows-msvc",
+	"wasm32-unknown-unknown",
 ]
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-yanked = "deny"
-notice = "warn"
+version = 2
 ignore = []
 
 [licenses]
-unlicensed = "deny"
-copyleft = "deny"
+version = 2
 confidence-threshold = 0.9
 allow = [
-	"Unlicense",    # https://spdx.org/licenses/Unlicense
-	"CC0-1.0",      # https://spdx.org/licenses/CC0-1.0
-	"ISC",          # https://spdx.org/licenses/ISC
-	"MIT",          # https://spdx.org/licenses/MIT
-	"MIT-0",        # https://spdx.org/licenses/MIT-0
-	"BSD-3-Clause", # https://spdx.org/licenses/BSD-3-Clause
-	"Zlib",         # https://spdx.org/licenses/Zlib
-	"Apache-2.0",   # https://spdx.org/licenses/Apache-2.0
-]
-exceptions = [
-	{ name = "unicode-ident", allow = [
-		"Unicode-DFS-2016",
-	] },
+	"Unlicense",        # https://spdx.org/licenses/Unlicense
+	"CC0-1.0",          # https://spdx.org/licenses/CC0-1.0
+	"ISC",              # https://spdx.org/licenses/ISC
+	"MIT",              # https://spdx.org/licenses/MIT
+	"MIT-0",            # https://spdx.org/licenses/MIT-0
+	"BSD-2-Clause",     # https://spdx.org/licenses/BSD-2-Clause
+	"BSD-3-Clause",     # https://spdx.org/licenses/BSD-3-Clause
+	"Zlib",             # https://spdx.org/licenses/Zlib
+	"Apache-2.0",       # https://spdx.org/licenses/Apache-2.0
+	"Unicode-DFS-2016", # https://spdx.org/licenses/Unicode-DFS-2016
 ]
 default = "deny"
 
@@ -44,7 +42,3 @@ highlight = "all"
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-registry = [
-	"https://github.com/rust-lang/crates.io-index",
-]
-allow-git = []
