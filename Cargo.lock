@@ -2355,6 +2355,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
 dependencies = [
  "cfg-if",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -4147,6 +4150,7 @@ dependencies = [
  "bevy_embedded_assets",
  "bevy_screen_diagnostics",
  "image 0.25.1",
+ "instant",
  "rlsf",
  "tracing",
  "tracing-core",
