@@ -13,12 +13,14 @@ const TILE_FRAME_TIME_SECONDS: f32 = 0.1;
 
 const MOVEMENT_SPEED: f32 = 150.0;
 
-const LIGHT_INITIAL_INTENSITY: f32 = 100_000_000.0;
+const LIGHT_INITIAL_INTENSITY: f32 = 50_000_000_000.0;
 
 #[derive(Debug, Component)]
 pub struct Player {
-	idle_sprites: Handle<TextureAtlas>,
-	walking_sprites: Handle<TextureAtlas>,
+	idle_atlas: Handle<TextureAtlasLayout>,
+	idle_texture: Handle<Image>,
+	walking_atlas: Handle<TextureAtlasLayout>,
+	walking_texture: Handle<Image>,
 }
 
 #[derive(Debug, Component)]
@@ -31,37 +33,36 @@ pub struct Movement {
 pub fn initialize(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
-	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ) {
 	let idle_handle = asset_server.load("maze/player-idle.png");
-	let idle_atlas =
-		TextureAtlas::from_grid(idle_handle, TILE_SIZE, 1, TILE_AMOUNT_IDLE, None, None);
+	let idle_atlas = TextureAtlasLayout::from_grid(TILE_SIZE, 1, TILE_AMOUNT_IDLE, None, None);
 	let idle_atlas_handle = texture_atlases.add(idle_atlas);
 
 	let walking_handle = asset_server.load("maze/player-walking.png");
-	let walking_atlas = TextureAtlas::from_grid(
-		walking_handle,
-		TILE_SIZE,
-		1,
-		TILE_AMOUNT_WALKING,
-		None,
-		None,
-	);
+	let walking_atlas =
+		TextureAtlasLayout::from_grid(TILE_SIZE, 1, TILE_AMOUNT_WALKING, None, None);
 	let walking_atlas_handle = texture_atlases.add(walking_atlas);
 
 	commands
 		.spawn((
 			Player {
-				idle_sprites: idle_atlas_handle.clone(),
-				walking_sprites: walking_atlas_handle,
+				idle_atlas: idle_atlas_handle.clone(),
+				idle_texture: idle_handle.clone(),
+				walking_atlas: walking_atlas_handle,
+				walking_texture: walking_handle,
 			},
 			Movement {
 				is_right: true,
 				is_walking: false,
 			},
 			SpriteSheetBundle {
-				texture_atlas: idle_atlas_handle,
-				sprite: TextureAtlasSprite::new(0),
+				atlas: TextureAtlas {
+					layout: idle_atlas_handle,
+					..default()
+				},
+				texture: idle_handle,
+				sprite: Sprite::default(),
 				transform: Transform {
 					translation: Vec3 {
 						z: 10.0,
@@ -268,6 +269,7 @@ pub fn collision(
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
+#[allow(clippy::type_complexity)]
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn animation(
 	time: Res<Time>,
@@ -275,22 +277,25 @@ pub fn animation(
 		&Movement,
 		&Player,
 		&mut AnimationTimer,
-		&mut TextureAtlasSprite,
-		&mut Handle<TextureAtlas>,
+		&mut Sprite,
+		&mut TextureAtlas,
+		&mut Handle<Image>,
 	)>,
 ) {
-	for (movement, player, mut timer, mut sprite, mut atlas) in &mut query {
+	for (movement, player, mut timer, mut sprite, mut atlas, mut texture) in &mut query {
 		timer.tick(time.delta());
 		if timer.just_finished() {
-			sprite.index += 1;
+			atlas.index += 1;
 		}
 
 		if movement.is_walking {
-			*atlas = player.walking_sprites.clone();
-			sprite.index %= TILE_AMOUNT_WALKING;
+			atlas.layout = player.walking_atlas.clone();
+			*texture = player.walking_texture.clone();
+			atlas.index %= TILE_AMOUNT_WALKING;
 		} else {
-			*atlas = player.idle_sprites.clone();
-			sprite.index %= TILE_AMOUNT_IDLE;
+			atlas.layout = player.idle_atlas.clone();
+			*texture = player.idle_texture.clone();
+			atlas.index %= TILE_AMOUNT_IDLE;
 		}
 
 		sprite.flip_x = !movement.is_right;

@@ -7,11 +7,8 @@ use std::{
 
 use bevy::{
 	prelude::*,
-	render::{
-		render_resource::{
-			Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-		},
-		texture::ImageSampler,
+	render::render_resource::{
+		Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
 	},
 	window::PrimaryWindow,
 };
@@ -101,7 +98,7 @@ impl Maze {
 		loc: Vec2,
 		commands: &mut Commands,
 		asset_server: &AssetServer,
-		texture_atlases: &mut Assets<TextureAtlas>,
+		texture_atlases: &mut Assets<TextureAtlasLayout>,
 		rng: &Rand,
 	) {
 		let tile = self.get(x, y);
@@ -292,8 +289,8 @@ fn gen_tile_textures(
 					| TextureUsages::RENDER_ATTACHMENT,
 				view_formats: &[],
 			},
-			sampler_descriptor: ImageSampler::Default,
 			texture_view_descriptor: None,
+			..default()
 		});
 		res[bits as usize] = Some(handle);
 	}
@@ -396,12 +393,12 @@ pub fn initialize(
 		&include_bytes!("../../assets/maze/cave-floor-2.png")[..],
 	];
 
-	let floor_mesh = meshes.add(Mesh::from(shape::Quad::new(TILE_SIZE)));
-	let wall_mesh = meshes.add(Mesh::from(shape::Box::new(
+	let floor_mesh = meshes.add(Rectangle::from_size(TILE_SIZE));
+	let wall_mesh = meshes.add(Cuboid::new(
 		SUBTILE_SIZE.x.mul_add(SUBTILE_SCALE, TILE_SIZE.x),
 		SUBTILE_SIZE.y * SUBTILE_SCALE,
 		10.0,
-	)));
+	));
 
 	let wall_material = materials.add(StandardMaterial {
 		base_color: Color::rgba(1.0, 1.0, 1.0, 1.0),
@@ -420,7 +417,7 @@ pub fn initialize(
 			base_color_texture: Some(h.clone()),
 			reflectance: rng.f32().mul_add(0.1, 0.1),
 			perceptual_roughness: rng.f32().mul_add(0.15, 0.85),
-			emissive: Color::hsl(210.0, 0.3, 0.3),
+			emissive: Color::hsl(210.0, 0.3, 0.3).as_rgba() * 18.0,
 			emissive_texture: Some(h),
 			unlit: false,
 			..default()
@@ -449,7 +446,7 @@ pub fn initialize(
 pub fn spawn_visible_tiles(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
-	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 	maze: Res<Maze>,
 	rng: Res<Rand>,
 	tiles: Query<&TilePos, With<Tile>>,

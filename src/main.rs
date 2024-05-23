@@ -12,16 +12,15 @@ pub mod util;
 use std::{
 	backtrace::{Backtrace, BacktraceStatus},
 	panic::PanicInfo,
-	time::Duration,
 };
 
-use bevy::{asset::ChangeWatcher, log::LogPlugin, prelude::*, window::WindowMode};
 #[cfg(feature = "debug")]
 use bevy::{
 	diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 	log::Level,
 	window::close_on_esc,
 };
+use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 #[cfg(feature = "debug")]
 use bevy_debug_text_overlay::OverlayPlugin;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
@@ -124,7 +123,6 @@ pub fn main() {
 			primary_window: Some(Window {
 				mode: WindowMode::BorderlessFullscreen,
 				resizable: true,
-				fit_canvas_to_parent: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
 					String::new()
@@ -136,13 +134,8 @@ pub fn main() {
 			..default()
 		})
 		.set(ImagePlugin::default_nearest())
-		.set(AssetPlugin {
-			watch_for_changes: cfg!(feature = "debug").then_some(ChangeWatcher {
-				delay: Duration::from_millis(100),
-			}),
-			..default()
-		})
-		.add_before::<AssetPlugin, _>(EmbeddedAssetPlugin)
+		.set(AssetPlugin::default())
+		.add_before::<AssetPlugin, _>(EmbeddedAssetPlugin::default())
 		.disable::<LogPlugin>();
 
 	app.insert_resource(ClearColor(Color::NONE))

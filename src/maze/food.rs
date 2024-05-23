@@ -38,18 +38,21 @@ impl FmtDisplay for FoodEaten {
 pub fn spawn(
 	builder: &mut ChildBuilder,
 	asset_server: &AssetServer,
-	texture_atlases: &mut Assets<TextureAtlas>,
+	texture_atlases: &mut Assets<TextureAtlasLayout>,
 	rng: &Rand,
 ) {
 	let foods_handle = asset_server.load("maze/food.png");
-	let foods_atlas = TextureAtlas::from_grid(foods_handle, FOOD_SIZE, 1, FOOD_AMOUNT, None, None);
+	let foods_atlas = TextureAtlasLayout::from_grid(FOOD_SIZE, 1, FOOD_AMOUNT, None, None);
 	let foods_atlas_handle = texture_atlases.add(foods_atlas);
 
 	let index = rng.usize(0..FOOD_AMOUNT);
 
 	builder.spawn((Food, SpriteSheetBundle {
-		texture_atlas: foods_atlas_handle,
-		sprite: TextureAtlasSprite::new(index),
+		atlas: TextureAtlas {
+			layout: foods_atlas_handle,
+			index,
+		},
+		texture: foods_handle,
 		transform: Transform {
 			scale: Vec3::splat(FOOD_SCALE),
 			..default()
@@ -88,7 +91,7 @@ pub fn init_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 					font_size: 64.0,
 					color: Color::BLACK,
 				})
-				.with_text_alignment(TextAlignment::Center)
+				.with_text_justify(JustifyText::Center)
 				.with_style(Style {
 					position_type: PositionType::Relative,
 					..default()
@@ -134,7 +137,7 @@ pub fn eat(
 
 pub fn dim(
 	player: Query<&GlobalTransform, (With<Player>, Without<Food>)>,
-	mut food: Query<(&GlobalTransform, &mut TextureAtlasSprite), With<Food>>,
+	mut food: Query<(&GlobalTransform, &mut Sprite), With<Food>>,
 ) {
 	let player = player.single().translation();
 

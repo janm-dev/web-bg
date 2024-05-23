@@ -105,9 +105,9 @@ impl From<PlayerInput> for Vec3 {
 /// movement/animation processing (e.g. in the `PreUpdate`) schedule
 pub fn input(
 	mut input: ResMut<PlayerInput>,
-	key_input: Res<Input<KeyCode>>,
+	key_input: Res<ButtonInput<KeyCode>>,
 	gamepads: Res<Gamepads>,
-	pad_input: Res<Input<GamepadButton>>,
+	pad_input: Res<ButtonInput<GamepadButton>>,
 	stick_input: Res<Axis<GamepadAxis>>,
 ) {
 	const DEADZONE: f32 = 0.05;
@@ -116,36 +116,36 @@ pub fn input(
 	let mut right = 0.0;
 
 	// Keyboard WASD
-	if key_input.pressed(KeyCode::W) {
+	if key_input.pressed(KeyCode::KeyW) {
 		up += 1.0;
 	}
 
-	if key_input.pressed(KeyCode::S) {
+	if key_input.pressed(KeyCode::KeyS) {
 		up -= 1.0;
 	}
 
-	if key_input.pressed(KeyCode::D) {
+	if key_input.pressed(KeyCode::KeyD) {
 		right += 1.0;
 	}
 
-	if key_input.pressed(KeyCode::A) {
+	if key_input.pressed(KeyCode::KeyA) {
 		right -= 1.0;
 	}
 
 	// Keyboard arrow keys
-	if key_input.pressed(KeyCode::Up) {
+	if key_input.pressed(KeyCode::ArrowUp) {
 		up += 1.0;
 	}
 
-	if key_input.pressed(KeyCode::Down) {
+	if key_input.pressed(KeyCode::ArrowDown) {
 		up -= 1.0;
 	}
 
-	if key_input.pressed(KeyCode::Right) {
+	if key_input.pressed(KeyCode::ArrowRight) {
 		right += 1.0;
 	}
 
-	if key_input.pressed(KeyCode::Left) {
+	if key_input.pressed(KeyCode::ArrowLeft) {
 		right -= 1.0;
 	}
 

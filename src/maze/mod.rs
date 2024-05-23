@@ -1,6 +1,6 @@
 //! A randomly generated maze/cave.
 
-use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, render::camera::ClearColorConfig, window::PrimaryWindow};
 
 use crate::util::{input, PlayerInput};
 
@@ -40,17 +40,12 @@ pub fn start(app: &mut App) {
 	app.insert_resource(PlayerInput::default());
 }
 
-#[derive(Debug, Component)]
-struct Target;
-
 fn camera_initialization(mut commands: Commands) {
 	commands.spawn(Camera2dBundle {
 		camera: Camera {
 			order: 1,
-			..default()
-		},
-		camera_2d: Camera2d {
 			clear_color: ClearColorConfig::None,
+			..default()
 		},
 		..default()
 	});
@@ -72,7 +67,8 @@ fn camera_initialization(mut commands: Commands) {
 			},
 			..default()
 		},
-		ComputedVisibility::default(),
+		InheritedVisibility::default(),
+		ViewVisibility::default(),
 	));
 }
 
