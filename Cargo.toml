@@ -20,7 +20,6 @@ default = [
 ]
 dynamic = ["bevy/dynamic_linking"]
 debug = [
-	"bevy/file_watcher",
 	"dep:tracing",
 	"dep:bevy-debug-text-overlay",
 	"dep:bevy_screen_diagnostics",
