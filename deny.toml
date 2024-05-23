@@ -29,7 +29,6 @@ allow = [
 	"Apache-2.0",       # https://spdx.org/licenses/Apache-2.0
 	"Unicode-DFS-2016", # https://spdx.org/licenses/Unicode-DFS-2016
 ]
-default = "deny"
 
 [licenses.private]
 ignore = false
