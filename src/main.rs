@@ -122,11 +122,7 @@ pub fn main() {
 	let default_plugins = DefaultPlugins
 		.set(WindowPlugin {
 			primary_window: Some(Window {
-				mode: if cfg!(target_arch = "wasm32") {
-					WindowMode::Windowed
-				} else {
-					WindowMode::BorderlessFullscreen
-				},
+				mode: WindowMode::BorderlessFullscreen,
 				resizable: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
