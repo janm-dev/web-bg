@@ -24,7 +24,7 @@ use bevy::{
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 #[cfg(feature = "debug")]
 use bevy_debug_text_overlay::OverlayPlugin;
-use bevy_embedded_assets::EmbeddedAssetPlugin;
+use bevy_embedded_assets::{EmbeddedAssetPlugin, PluginMode};
 #[cfg(feature = "debug")]
 use bevy_screen_diagnostics::{
 	ScreenDiagnosticsPlugin, ScreenEntityDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin,
@@ -136,7 +136,9 @@ pub fn main() {
 		})
 		.set(ImagePlugin::default_nearest())
 		.set(AssetPlugin::default())
-		.add_before::<AssetPlugin, _>(EmbeddedAssetPlugin::default())
+		.add_before::<AssetPlugin, _>(EmbeddedAssetPlugin {
+			mode: PluginMode::ReplaceDefault,
+		})
 		.disable::<LogPlugin>();
 
 	app.insert_resource(ClearColor(Color::NONE))
