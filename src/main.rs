@@ -14,11 +14,12 @@ use std::{
 	panic::PanicInfo,
 };
 
+#[cfg(any(feature = "debug", not(target_arch = "wasm32")))]
+use bevy::window::close_on_esc;
 #[cfg(feature = "debug")]
 use bevy::{
 	diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 	log::Level,
-	window::close_on_esc,
 };
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 #[cfg(feature = "debug")]
@@ -121,7 +122,11 @@ pub fn main() {
 	let default_plugins = DefaultPlugins
 		.set(WindowPlugin {
 			primary_window: Some(Window {
-				mode: WindowMode::BorderlessFullscreen,
+				mode: if cfg!(target_arch = "wasm32") {
+					WindowMode::Windowed
+				} else {
+					WindowMode::BorderlessFullscreen
+				},
 				resizable: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
@@ -160,9 +165,10 @@ pub fn main() {
 			ScreenFrameDiagnosticsPlugin,
 			ScreenEntityDiagnosticsPlugin,
 		));
-
-		app.add_systems(Update, close_on_esc);
 	}
+
+	#[cfg(any(feature = "debug", not(target_arch = "wasm32")))]
+	app.add_systems(Update, close_on_esc);
 
 	app.add_systems(PostStartup, events::initialized);
 	app.add_systems(Update, events::started);

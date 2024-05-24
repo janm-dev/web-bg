@@ -41,14 +41,18 @@ pub fn start(app: &mut App) {
 }
 
 fn camera_initialization(mut commands: Commands) {
-	commands.spawn(Camera2dBundle {
-		camera: Camera {
-			order: 1,
-			clear_color: ClearColorConfig::None,
+	commands.spawn((
+		Camera2dBundle {
+			camera: Camera {
+				order: 1,
+				clear_color: ClearColorConfig::None,
+				..default()
+			},
 			..default()
 		},
-		..default()
-	});
+		InheritedVisibility::default(),
+		ViewVisibility::default(),
+	));
 
 	commands.spawn((
 		Camera3dBundle {
