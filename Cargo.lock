@@ -3946,16 +3946,7 @@ checksum = "63de1e1d4115534008d8fd5788b39324d6f58fc707849090533828619351d855"
 dependencies = [
  "loom",
  "once_cell",
- "tracy-client-sys 0.23.0",
-]
-
-[[package]]
-name = "tracy-client-sys"
-version = "0.22.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d104d610dfa9dd154535102cc9c6164ae1fa37842bc2d9e83f9ac82b0ae0882"
-dependencies = [
- "cc",
+ "tracy-client-sys",
 ]
 
 [[package]]
@@ -4167,7 +4158,7 @@ dependencies = [
  "tracing-tracy",
  "tracing-web",
  "tracy-client",
- "tracy-client-sys 0.22.2",
+ "tracy-client-sys",
  "turborand",
  "wasm-bindgen",
  "web-sys",
