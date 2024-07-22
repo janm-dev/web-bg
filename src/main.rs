@@ -9,10 +9,9 @@
 pub mod events;
 pub mod util;
 
-use std::{
-	backtrace::{Backtrace, BacktraceStatus},
-	panic::PanicInfo,
-};
+use std::backtrace::{Backtrace, BacktraceStatus};
+#[allow(deprecated)] // PanicHookInfo is not stable yet
+use std::panic::PanicInfo;
 
 #[cfg(any(feature = "debug", not(target_arch = "wasm32")))]
 use bevy::window::close_on_esc;
@@ -53,6 +52,7 @@ games! {
 	// "racecar" => racecar,
 }
 
+#[allow(deprecated)] // PanicHookInfo is not stable yet
 fn panic_hook(panic_info: &PanicInfo<'_>) {
 	#[cfg(target_arch = "wasm32")]
 	#[wasm_bindgen]
