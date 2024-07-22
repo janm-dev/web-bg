@@ -52,6 +52,7 @@ games! {
 	// "racecar" => racecar,
 }
 
+#[allow(deprecated)] // PanicHookInfo is not stable yet
 fn panic_hook(panic_info: &PanicInfo<'_>) {
 	#[cfg(target_arch = "wasm32")]
 	#[wasm_bindgen]
