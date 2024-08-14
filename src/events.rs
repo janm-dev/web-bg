@@ -76,12 +76,12 @@ impl RunEvent {
 	#[must_use]
 	#[cfg(target_arch = "wasm32")]
 	pub fn into_js(&self) -> Event {
-		CustomEvent::new_with_event_init_dict(
-			self.name(),
-			CustomEventInit::new().detail(&self.details()),
-		)
-		.expect("JS `new CustomEvent(...)` failed")
-		.into()
+		let init = CustomEventInit::new();
+		init.set_detail(&self.details());
+
+		CustomEvent::new_with_event_init_dict(self.name(), &init)
+			.expect("JS `new CustomEvent(...)` failed")
+			.into()
 	}
 }
 
