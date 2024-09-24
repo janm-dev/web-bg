@@ -3940,9 +3940,9 @@ dependencies = [
 
 [[package]]
 name = "tracy-client"
-version = "0.17.3"
+version = "0.17.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "373db47331c3407b343538df77eea2516884a0b126cdfb4b135acfd400015dd7"
+checksum = "746b078c6a09ebfd5594609049e07116735c304671eaab06ce749854d23435bc"
 dependencies = [
  "loom",
  "once_cell",
