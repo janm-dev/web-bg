@@ -2275,9 +2275,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.25.3"
+version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d97eb9a8e0cd5b76afea91d7eecd5cf8338cd44ced04256cf1f800474b227c52"
+checksum = "bc144d44a31d753b02ce64093d532f55ff8dc4ebf2ffb8a63c0dda691385acae"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
@@ -4150,7 +4150,7 @@ dependencies = [
  "bevy-debug-text-overlay",
  "bevy_embedded_assets",
  "bevy_screen_diagnostics",
- "image 0.25.3",
+ "image 0.25.4",
  "instant",
  "rlsf",
  "tracing",
