@@ -47,7 +47,7 @@ portoom = []
 racecar = []
 
 [dependencies]
-tracing = { version = "0.1.40", optional = true }
+tracing = { version = "0.1.41", optional = true }
 tracing-tracy = { version = "0.11.3", optional = true }
 tracy-client = { version = "0.17.4", optional = true }
 tracy-client-sys = { version = "0.24.2", optional = true }
