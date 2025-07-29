@@ -20,8 +20,6 @@ use bevy::{
 	log::Level,
 };
 use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
-#[cfg(feature = "debug")]
-use bevy_debug_text_overlay::OverlayPlugin;
 use bevy_embedded_assets::{EmbeddedAssetPlugin, PluginMode};
 use bevy_light_2d::plugin::Light2dPlugin;
 #[cfg(feature = "debug")]
@@ -153,11 +151,7 @@ pub fn main() {
 				..default()
 			},
 			LogDiagnosticsPlugin::default(),
-			FrameTimeDiagnosticsPlugin,
-			OverlayPlugin {
-				font_size: 16.0,
-				..default()
-			},
+			FrameTimeDiagnosticsPlugin::default(),
 			ScreenDiagnosticsPlugin::default(),
 			ScreenFrameDiagnosticsPlugin,
 			ScreenEntityDiagnosticsPlugin,
