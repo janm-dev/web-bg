@@ -18,7 +18,7 @@ pub struct Food;
 pub struct FoodEaten(u16);
 
 impl FoodEaten {
-	pub fn incr(&mut self) {
+	pub const fn incr(&mut self) {
 		self.0 = self.0.saturating_add(1);
 	}
 }
@@ -110,7 +110,7 @@ pub fn update_ui(mut counter: Query<(&FoodEaten, &mut Text), Changed<FoodEaten>>
 	if let Ok((counter, mut text)) = counter.single_mut() {
 		text.0.clear();
 		write!(&mut text.0, "{counter}").expect("string formatting failed");
-	};
+	}
 }
 
 pub fn eat(

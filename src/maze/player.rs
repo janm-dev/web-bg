@@ -156,6 +156,7 @@ pub fn collision(
 	let inner_half = half_size - maze::WALL_THICKNESS;
 	let scaled_inner = inner_half * maze::TILE_SCALE;
 
+	#[expect(clippy::cast_precision_loss)]
 	let player_edges = [
 		player.translation.y + TILE_SIZE.y as f32 * TILE_SCALE / 2.0,
 		player.translation.x + TILE_SIZE.x as f32 * TILE_SCALE / 2.0,

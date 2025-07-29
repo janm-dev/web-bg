@@ -129,7 +129,7 @@ impl Maze {
 					&& tile.is_closed(Left);
 
 				if !(is_fully_closed || is_fully_open) {
-					self.spawn_tile_walls(builder, tile);
+					Self::spawn_tile_walls(builder, tile);
 				}
 
 				if tile.has_food() {
@@ -138,14 +138,15 @@ impl Maze {
 			});
 	}
 
-	fn spawn_tile_walls(&self, builder: &mut ChildSpawnerCommands, tile: Tile) {
+	fn spawn_tile_walls(builder: &mut ChildSpawnerCommands, tile: Tile) {
 		if tile.is_closed(Top) {
 			builder.spawn((
 				LightOccluder2d {
 					shape: LightOccluder2dShape::Rectangle {
 						half_size: Vec2 {
-							x: TILE_SIZE.x * TILE_SCALE
-								+ SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
+							x: TILE_SIZE
+								.x
+								.mul_add(TILE_SCALE, SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE),
 							y: SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
 						} / 2.0,
 					},
@@ -166,8 +167,9 @@ impl Maze {
 				LightOccluder2d {
 					shape: LightOccluder2dShape::Rectangle {
 						half_size: Vec2 {
-							x: TILE_SIZE.x * TILE_SCALE
-								+ SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
+							x: TILE_SIZE
+								.x
+								.mul_add(TILE_SCALE, SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE),
 							y: SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
 						} / 2.0,
 					},
@@ -189,8 +191,9 @@ impl Maze {
 					shape: LightOccluder2dShape::Rectangle {
 						half_size: Vec2 {
 							x: SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
-							y: TILE_SIZE.y * TILE_SCALE
-								+ SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
+							y: TILE_SIZE
+								.y
+								.mul_add(TILE_SCALE, SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE),
 						} / 2.0,
 					},
 				},
@@ -211,8 +214,9 @@ impl Maze {
 					shape: LightOccluder2dShape::Rectangle {
 						half_size: Vec2 {
 							x: SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
-							y: TILE_SIZE.y * TILE_SCALE
-								+ SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
+							y: TILE_SIZE
+								.y
+								.mul_add(TILE_SCALE, SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE),
 						} / 2.0,
 					},
 				},
@@ -353,7 +357,7 @@ impl Tile {
 		Self(0b1111)
 	}
 
-	pub fn set_food(&mut self, has_food: bool) -> &mut Self {
+	pub const fn set_food(&mut self, has_food: bool) -> &mut Self {
 		if self.has_food() != has_food {
 			self.0 ^= 0b0001_0000;
 		}
@@ -366,7 +370,7 @@ impl Tile {
 	}
 
 	/// Open the given `side` of this Tile
-	pub fn open(&mut self, side: Direction) -> &mut Self {
+	pub const fn open(&mut self, side: Direction) -> &mut Self {
 		match side {
 			Direction::Top => self.0 &= 0b1111_0111,
 			Direction::Right => self.0 &= 0b1111_1011,
@@ -628,7 +632,7 @@ fn tile_bits(i: usize, maze: &[Tile]) -> u8 {
 
 	let tile = maze[i];
 	let tile_is_edge = !(maze_size.0..=(maze_size.1 - 1) * maze_size.0).contains(&i)
-		|| i % maze_size.0 == 0
+		|| i.is_multiple_of(maze_size.0)
 		|| i % maze_size.0 == maze_size.0 - 1;
 
 	let mut res = tile.0 & 0b1111;
