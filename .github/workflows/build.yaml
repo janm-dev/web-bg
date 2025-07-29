@@ -46,7 +46,7 @@ jobs:
           cp target/wasm/web_bg.wasm web/debug/web_bg.wasm
           cp target/wasm/web.js web/debug/background.js
           cp index.html web/debug/index.html
-      - uses: actions/upload-pages-artifact@v1
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: ./web
       - id: deployment
