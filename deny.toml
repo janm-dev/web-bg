@@ -28,6 +28,7 @@ allow = [
 	"Zlib",             # https://spdx.org/licenses/Zlib
 	"Apache-2.0",       # https://spdx.org/licenses/Apache-2.0
 	"Unicode-DFS-2016", # https://spdx.org/licenses/Unicode-DFS-2016
+	"Unicode-3.0",      # https://spdx.org/licenses/Unicode-3.0
 ]
 
 [licenses.private]

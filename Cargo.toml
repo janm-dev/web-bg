@@ -60,6 +60,7 @@ tracy-client-sys = { version = "0.26.1", optional = true }
 turborand = { version = "0.10.1", features = ["atomic"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3.3", features = ["wasm_js"] }
 instant = { version = "0.1", features = ["wasm-bindgen"] }
 tracing-core = { version = "0.1.32", optional = true }
 tracing-subscriber = { version = "0.3.18", features = [
