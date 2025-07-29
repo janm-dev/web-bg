@@ -1,13 +1,13 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
+use bevy::{color::palettes::css, prelude::*};
 
-use super::{maze, maze::Tile, PlayerInput};
+use super::{PlayerInput, maze, maze::Tile};
 use crate::util::{Rand, TurboRand};
 
-const TILE_SIZE: Vec2 = Vec2::new(24.0, 32.0);
-const TILE_AMOUNT_IDLE: usize = 10;
-const TILE_AMOUNT_WALKING: usize = 10;
+const TILE_SIZE: UVec2 = UVec2::new(24, 32);
+const TILE_AMOUNT_IDLE: u32 = 10;
+const TILE_AMOUNT_WALKING: u32 = 10;
 const TILE_SCALE: f32 = 2.0;
 const TILE_FRAME_TIME_SECONDS: f32 = 0.1;
 
@@ -56,21 +56,20 @@ pub fn initialize(
 				is_right: true,
 				is_walking: false,
 			},
-			SpriteSheetBundle {
-				atlas: TextureAtlas {
+			Sprite {
+				texture_atlas: Some(TextureAtlas {
 					layout: idle_atlas_handle,
 					..default()
-				},
-				texture: idle_handle,
-				sprite: Sprite::default(),
-				transform: Transform {
-					translation: Vec3 {
-						z: 10.0,
-						..default()
-					},
-					scale: Vec3::splat(TILE_SCALE),
+				}),
+				image: idle_handle,
+				..default()
+			},
+			Transform {
+				translation: Vec3 {
+					z: 10.0,
 					..default()
 				},
+				scale: Vec3::splat(TILE_SCALE),
 				..default()
 			},
 			AnimationTimer(Timer::from_seconds(
@@ -80,21 +79,18 @@ pub fn initialize(
 		))
 		.with_children(|builder| {
 			builder.spawn((
-				PointLightBundle {
-					point_light: PointLight {
-						color: Color::ORANGE,
-						intensity: LIGHT_INITIAL_INTENSITY,
-						range: 1000.0,
-						shadows_enabled: true,
-						..default()
-					},
-					transform: Transform {
-						translation: Vec3 {
-							x: 0.0,
-							y: 0.0,
-							z: 0.5,
-						},
-						..default()
+				PointLight {
+					color: css::ORANGE.into(),
+					intensity: LIGHT_INITIAL_INTENSITY,
+					range: 1000.0,
+					shadows_enabled: true,
+					..default()
+				},
+				Transform {
+					translation: Vec3 {
+						x: 0.0,
+						y: 0.0,
+						z: 0.5,
 					},
 					..default()
 				},
@@ -109,7 +105,7 @@ pub fn movement(
 	input: Res<PlayerInput>,
 	mut query: Query<(&mut Transform, &mut Movement), With<Player>>,
 ) {
-	let distance = MOVEMENT_SPEED * time.delta_seconds();
+	let distance = MOVEMENT_SPEED * time.delta_secs();
 
 	for (mut trans, mut movement) in &mut query {
 		if input.right > 0.0 {
@@ -151,17 +147,17 @@ pub fn collision(
 ) {
 	use maze::Direction::{Bottom, Left, Right, Top};
 
-	let mut player = player.single_mut();
+	let mut player = player.single_mut().expect("player entity not found");
 
 	let half_size = maze::TILE_SIZE / 2.0;
 	let inner_half = half_size - maze::WALL_THICKNESS;
 	let scaled_inner = inner_half * maze::TILE_SCALE;
 
 	let player_edges = [
-		player.translation.y + TILE_SIZE.y * TILE_SCALE / 2.0,
-		player.translation.x + TILE_SIZE.x * TILE_SCALE / 2.0,
-		player.translation.y - TILE_SIZE.y * TILE_SCALE / 2.0,
-		player.translation.x - TILE_SIZE.x * TILE_SCALE / 2.0,
+		player.translation.y + TILE_SIZE.y as f32 * TILE_SCALE / 2.0,
+		player.translation.x + TILE_SIZE.x as f32 * TILE_SCALE / 2.0,
+		player.translation.y - TILE_SIZE.y as f32 * TILE_SCALE / 2.0,
+		player.translation.x - TILE_SIZE.x as f32 * TILE_SCALE / 2.0,
 	];
 
 	let mut nearby_tiles = tiles
@@ -273,29 +269,34 @@ pub struct AnimationTimer(Timer);
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
 pub fn animation(
 	time: Res<Time>,
-	mut query: Query<(
-		&Movement,
-		&Player,
-		&mut AnimationTimer,
-		&mut Sprite,
-		&mut TextureAtlas,
-		&mut Handle<Image>,
-	)>,
+	mut query: Query<(&Movement, &Player, &mut AnimationTimer, &mut Sprite)>,
 ) {
-	for (movement, player, mut timer, mut sprite, mut atlas, mut texture) in &mut query {
+	for (movement, player, mut timer, mut sprite) in &mut query {
+		let Sprite {
+			image,
+			texture_atlas: Some(TextureAtlas { layout, index, .. }),
+			..
+		} = sprite.as_mut()
+		else {
+			panic!("sprite has no texture atlas");
+		};
+
 		timer.tick(time.delta());
+
 		if timer.just_finished() {
-			atlas.index += 1;
+			*index += 1;
 		}
 
 		if movement.is_walking {
-			atlas.layout = player.walking_atlas.clone();
-			*texture = player.walking_texture.clone();
-			atlas.index %= TILE_AMOUNT_WALKING;
+			*layout = player.walking_atlas.clone();
+			*image = player.walking_texture.clone();
+			*index %= usize::try_from(TILE_AMOUNT_WALKING)
+				.expect("there should be less than usize::MAX walking animation frames");
 		} else {
-			atlas.layout = player.idle_atlas.clone();
-			*texture = player.idle_texture.clone();
-			atlas.index %= TILE_AMOUNT_IDLE;
+			*layout = player.idle_atlas.clone();
+			*image = player.idle_texture.clone();
+			*index %= usize::try_from(TILE_AMOUNT_IDLE)
+				.expect("there should be less than usize::MAX idle animation frames");
 		}
 
 		sprite.flip_x = !movement.is_right;

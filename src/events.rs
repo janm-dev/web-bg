@@ -3,12 +3,10 @@
 use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 	sync::{Once, OnceLock},
+	time::{Duration, Instant},
 };
 
-use bevy::{
-	prelude::*,
-	utils::{Duration, Instant},
-};
+use bevy::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]

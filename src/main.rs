@@ -9,12 +9,11 @@
 pub mod events;
 pub mod util;
 
-use std::backtrace::{Backtrace, BacktraceStatus};
-#[allow(deprecated)] // PanicHookInfo is not stable yet
-use std::panic::PanicInfo;
+use std::{
+	backtrace::{Backtrace, BacktraceStatus},
+	panic::PanicHookInfo,
+};
 
-#[cfg(any(feature = "debug", not(target_arch = "wasm32")))]
-use bevy::window::close_on_esc;
 #[cfg(feature = "debug")]
 use bevy::{
 	diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -33,7 +32,7 @@ use rlsf::SmallGlobalTlsf;
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
 use tracing_subscriber::{fmt::format::Pretty, prelude::*};
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
-use tracing_web::{performance_layer, MakeConsoleWriter};
+use tracing_web::{MakeConsoleWriter, performance_layer};
 use util::{Rand, TurboRand};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -52,8 +51,7 @@ games! {
 	// "racecar" => racecar,
 }
 
-#[allow(deprecated)] // PanicHookInfo is not stable yet
-fn panic_hook(panic_info: &PanicInfo<'_>) {
+fn panic_hook(panic_info: &PanicHookInfo<'_>) {
 	#[cfg(target_arch = "wasm32")]
 	#[wasm_bindgen]
 	extern "C" {
@@ -122,7 +120,7 @@ pub fn main() {
 	let default_plugins = DefaultPlugins
 		.set(WindowPlugin {
 			primary_window: Some(Window {
-				mode: WindowMode::BorderlessFullscreen,
+				mode: WindowMode::BorderlessFullscreen(MonitorSelection::Current),
 				resizable: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
 				title: if cfg!(target_arch = "wasm32") {
@@ -136,14 +134,13 @@ pub fn main() {
 		})
 		.set(ImagePlugin::default_nearest())
 		.set(AssetPlugin::default())
-		.add_before::<AssetPlugin, _>(EmbeddedAssetPlugin {
+		.add_before::<AssetPlugin>(EmbeddedAssetPlugin {
 			mode: PluginMode::ReplaceDefault,
 		})
 		.disable::<LogPlugin>();
 
 	app.insert_resource(ClearColor(Color::NONE))
 		.insert_resource(rng)
-		.insert_resource(Msaa::Sample4)
 		.add_plugins(default_plugins);
 
 	#[cfg(feature = "debug")]
@@ -166,7 +163,7 @@ pub fn main() {
 	}
 
 	#[cfg(any(feature = "debug", not(target_arch = "wasm32")))]
-	app.add_systems(Update, close_on_esc);
+	app.add_systems(Update, util::close_on_esc);
 
 	app.add_systems(PostStartup, events::initialized);
 	app.add_systems(Update, events::started);

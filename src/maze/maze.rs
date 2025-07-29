@@ -6,13 +6,14 @@ use std::{
 };
 
 use bevy::{
+	color::palettes::css,
 	prelude::*,
 	render::render_resource::{
 		Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
 	},
 	window::PrimaryWindow,
 };
-use image::{imageops, load_from_memory, RgbaImage};
+use image::{RgbaImage, imageops, load_from_memory};
 
 use self::Direction::{Bottom, Left, Right, Top};
 use crate::util::{Rand, TurboRand};
@@ -106,20 +107,23 @@ impl Maze {
 		let ti = tile_bits(self.idx(x, y), &self.tiles);
 
 		commands
-			.spawn((tile, TilePos { x, y }, PbrBundle {
-				mesh: self.floor_mesh.clone(),
-				material: self.textures[ti as usize].clone(),
-				transform: Transform {
-					translation: Vec3 {
-						x: loc.x,
-						y: loc.y,
+			.spawn((
+				tile,
+				TilePos { x, y },
+				(
+					Mesh3d(self.floor_mesh.clone()),
+					MeshMaterial3d(self.textures[ti as usize].clone()),
+					Transform {
+						translation: Vec3 {
+							x: loc.x,
+							y: loc.y,
+							..default()
+						},
+						scale: Vec3::splat(TILE_SCALE),
 						..default()
 					},
-					scale: Vec3::splat(TILE_SCALE),
-					..default()
-				},
-				..default()
-			}))
+				),
+			))
 			.with_children(|builder| {
 				let is_fully_open = tile.is_open(Top)
 					&& tile.is_open(Right)
@@ -140,12 +144,12 @@ impl Maze {
 			});
 	}
 
-	fn spawn_tile_walls(&self, builder: &mut ChildBuilder, tile: Tile) {
+	fn spawn_tile_walls(&self, builder: &mut ChildSpawnerCommands, tile: Tile) {
 		if tile.is_closed(Top) {
-			builder.spawn(PbrBundle {
-				mesh: self.wall_mesh.clone(),
-				material: self.wall_material.clone(),
-				transform: Transform {
+			builder.spawn((
+				Mesh3d(self.wall_mesh.clone()),
+				MeshMaterial3d(self.wall_material.clone()),
+				Transform {
 					translation: Vec3 {
 						x: 0.0,
 						y: TILE_SIZE.y / 2.0,
@@ -153,15 +157,14 @@ impl Maze {
 					},
 					..default()
 				},
-				..default()
-			});
+			));
 		}
 
 		if tile.is_closed(Bottom) {
-			builder.spawn(PbrBundle {
-				mesh: self.wall_mesh.clone(),
-				material: self.wall_material.clone(),
-				transform: Transform {
+			builder.spawn((
+				Mesh3d(self.wall_mesh.clone()),
+				MeshMaterial3d(self.wall_material.clone()),
+				Transform {
 					translation: Vec3 {
 						x: 0.0,
 						y: -TILE_SIZE.y / 2.0,
@@ -169,15 +172,14 @@ impl Maze {
 					},
 					..default()
 				},
-				..default()
-			});
+			));
 		}
 
 		if tile.is_closed(Right) {
-			builder.spawn(PbrBundle {
-				mesh: self.wall_mesh.clone(),
-				material: self.wall_material.clone(),
-				transform: Transform {
+			builder.spawn((
+				Mesh3d(self.wall_mesh.clone()),
+				MeshMaterial3d(self.wall_material.clone()),
+				Transform {
 					translation: Vec3 {
 						x: TILE_SIZE.x / 2.0,
 						y: 0.0,
@@ -186,15 +188,14 @@ impl Maze {
 					rotation: Quat::from_rotation_z(PI / 2.0),
 					..default()
 				},
-				..default()
-			});
+			));
 		}
 
 		if tile.is_closed(Left) {
-			builder.spawn(PbrBundle {
-				mesh: self.wall_mesh.clone(),
-				material: self.wall_material.clone(),
-				transform: Transform {
+			builder.spawn((
+				Mesh3d(self.wall_mesh.clone()),
+				MeshMaterial3d(self.wall_material.clone()),
+				Transform {
 					translation: Vec3 {
 						x: -TILE_SIZE.x / 2.0,
 						y: 0.0,
@@ -203,8 +204,7 @@ impl Maze {
 					rotation: Quat::from_rotation_z(PI / 2.0),
 					..default()
 				},
-				..default()
-			});
+			));
 		}
 	}
 }
@@ -272,7 +272,7 @@ fn gen_tile_textures(
 		}
 
 		let handle = images.add(Image {
-			data: image.into_vec(),
+			data: Some(image.into_vec()),
 			texture_descriptor: TextureDescriptor {
 				label: None,
 				size: Extent3d {
@@ -401,28 +401,28 @@ pub fn initialize(
 	));
 
 	let wall_material = materials.add(StandardMaterial {
-		base_color: Color::rgba(1.0, 1.0, 1.0, 1.0),
-		emissive: Color::rgba(0.0, 0.0, 0.0, 0.0),
+		base_color: Color::WHITE,
+		emissive: LinearRgba::NONE,
 		reflectance: 1.0,
 		unlit: true,
 		fog_enabled: false,
 		..default()
 	});
 
-	let maze = gen_maze(&rng);
-
 	let textures = gen_tile_textures(&wall, &floor, &mut images, &rng).map(|h| {
 		materials.add(StandardMaterial {
-			base_color: Color::GRAY,
+			base_color: css::GRAY.into(),
 			base_color_texture: Some(h.clone()),
 			reflectance: rng.f32().mul_add(0.1, 0.1),
 			perceptual_roughness: rng.f32().mul_add(0.15, 0.85),
-			emissive: Color::hsl(210.0, 0.3, 0.3).as_rgba() * 18.0,
+			emissive: (Color::hsl(210.0, 0.3, 0.3).to_linear() * 18.0).with_alpha(1.0),
 			emissive_texture: Some(h),
 			unlit: false,
 			..default()
 		})
 	});
+
+	let maze = gen_maze(&rng);
 
 	let maze = Maze::new(
 		maze,
@@ -465,11 +465,11 @@ pub fn spawn_visible_tiles(
 		}
 	}
 
-	let Ok(window) = window.get_single() else {
+	let Ok(window) = window.single() else {
 		return;
 	};
 
-	let Ok(camera) = camera.get_single() else {
+	let Ok(camera) = camera.single() else {
 		return;
 	};
 
@@ -516,11 +516,11 @@ pub fn despawn_invisible_tiles(
 	window: Query<&Window, (With<PrimaryWindow>, Without<Tile>, Without<Camera2d>)>,
 	camera: Query<&Transform, (With<Camera2d>, Changed<Transform>, Without<Tile>)>,
 ) {
-	let Ok(window) = window.get_single() else {
+	let Ok(window) = window.single() else {
 		return;
 	};
 
-	let Ok(camera) = camera.get_single() else {
+	let Ok(camera) = camera.single() else {
 		return;
 	};
 
@@ -535,7 +535,7 @@ pub fn despawn_invisible_tiles(
 
 	if let Some((e, _)) = old_tiles.next() {
 		// This is very slow, so only do one per frame
-		commands.entity(e).despawn_recursive();
+		commands.entity(e).despawn();
 	}
 }
 

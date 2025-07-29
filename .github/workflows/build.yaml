@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v2
+      - uses: actions/configure-pages@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
@@ -50,4 +50,4 @@ jobs:
         with:
           path: ./web
       - id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v3

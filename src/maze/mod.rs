@@ -2,7 +2,7 @@
 
 use bevy::{prelude::*, render::camera::ClearColorConfig, window::PrimaryWindow};
 
-use crate::util::{input, PlayerInput};
+use crate::util::{PlayerInput, input};
 
 mod food;
 #[allow(clippy::module_inception)]
@@ -42,32 +42,28 @@ pub fn start(app: &mut App) {
 
 fn camera_initialization(mut commands: Commands) {
 	commands.spawn((
-		Camera2dBundle {
-			camera: Camera {
-				order: 1,
-				clear_color: ClearColorConfig::None,
-				..default()
-			},
+		Camera {
+			order: 1,
+			clear_color: ClearColorConfig::None,
 			..default()
 		},
+		Camera2d,
 		InheritedVisibility::default(),
 		ViewVisibility::default(),
 	));
 
 	commands.spawn((
-		Camera3dBundle {
-			camera: Camera {
-				order: 0,
-				..default()
-			},
-			projection: Projection::Orthographic(OrthographicProjection::default()),
-			transform: Transform {
-				translation: Vec3 {
-					x: 0.0,
-					y: 0.0,
-					z: 1.0,
-				},
-				..default()
+		Camera {
+			order: 0,
+			..default()
+		},
+		Camera3d::default(),
+		Projection::Orthographic(OrthographicProjection::default_3d()),
+		Transform {
+			translation: Vec3 {
+				x: 0.0,
+				y: 0.0,
+				z: 1.0,
 			},
 			..default()
 		},
@@ -86,8 +82,8 @@ fn camera_movement(
 	const FREE_MOVEMENT_SPACE_PROPORTION: f32 = 0.2;
 
 	for mut camera in &mut cameras {
-		let player = player.single();
-		let window = window.single();
+		let player = player.single().expect("player entity not found");
+		let window = window.single().expect("window entity not found");
 
 		let (width, height) = (
 			window.width() * FREE_MOVEMENT_SPACE_PROPORTION,

@@ -5,15 +5,15 @@ use std::fmt::{Error as FmtError, Result as FmtResult};
 
 use bevy::prelude::*;
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
-use tracing_core::{subscriber::Interest, Level, Metadata};
+use tracing_core::{Level, Metadata, subscriber::Interest};
 #[cfg(all(feature = "console_log", target_arch = "wasm32"))]
 use tracing_subscriber::{
 	filter::LevelFilter,
 	fmt::{format::Writer, time::FormatTime},
 	layer::{Context, Filter},
 };
-use turborand::rng::AtomicRng;
 pub use turborand::TurboRand;
+use turborand::rng::AtomicRng;
 
 /// Quickly declare minigames
 ///
@@ -42,6 +42,19 @@ macro_rules! games {
 			#[cfg(not(feature = $feat))]
 		)*
 		compile_error!("At least one minigame must be enabled");
+	}
+}
+
+/// Close all windows when the escape key (<kbd>Esc</kbd>) is pressed
+pub fn close_on_esc(
+	mut commands: Commands,
+	windows: Query<Entity, With<Window>>,
+	input: Res<ButtonInput<KeyCode>>,
+) {
+	if input.just_pressed(KeyCode::Escape) {
+		for window in &windows {
+			commands.entity(window).despawn();
+		}
 	}
 }
 
@@ -106,9 +119,7 @@ impl From<PlayerInput> for Vec3 {
 pub fn input(
 	mut input: ResMut<PlayerInput>,
 	key_input: Res<ButtonInput<KeyCode>>,
-	gamepads: Res<Gamepads>,
-	pad_input: Res<ButtonInput<GamepadButton>>,
-	stick_input: Res<Axis<GamepadAxis>>,
+	gamepads: Query<&Gamepad>,
 ) {
 	const DEADZONE: f32 = 0.05;
 
@@ -151,51 +162,31 @@ pub fn input(
 
 	for gamepad in gamepads.iter() {
 		// Gamepad buttons
-		if pad_input.pressed(GamepadButton {
-			gamepad,
-			button_type: GamepadButtonType::DPadUp,
-		}) {
+		if gamepad.pressed(GamepadButton::DPadUp) {
 			up += 1.0;
 		}
 
-		if pad_input.pressed(GamepadButton {
-			gamepad,
-			button_type: GamepadButtonType::DPadDown,
-		}) {
+		if gamepad.pressed(GamepadButton::DPadDown) {
 			up -= 1.0;
 		}
 
-		if pad_input.pressed(GamepadButton {
-			gamepad,
-			button_type: GamepadButtonType::DPadRight,
-		}) {
+		if gamepad.pressed(GamepadButton::DPadRight) {
 			right += 1.0;
 		}
 
-		if pad_input.pressed(GamepadButton {
-			gamepad,
-			button_type: GamepadButtonType::DPadLeft,
-		}) {
+		if gamepad.pressed(GamepadButton::DPadLeft) {
 			right -= 1.0;
 		}
 
 		// Gamepad stick
-		if let Some(i) = stick_input.get(GamepadAxis {
-			gamepad,
-			axis_type: GamepadAxisType::LeftStickY,
-		}) {
-			if i.abs() > DEADZONE {
-				up += i;
-			}
+		let Vec2 { x, y } = gamepad.left_stick();
+
+		if y.abs() > DEADZONE {
+			up += y;
 		}
 
-		if let Some(i) = stick_input.get(GamepadAxis {
-			gamepad,
-			axis_type: GamepadAxisType::LeftStickX,
-		}) {
-			if i.abs() > DEADZONE {
-				right += i;
-			}
+		if x.abs() > DEADZONE {
+			right += x;
 		}
 	}
 
