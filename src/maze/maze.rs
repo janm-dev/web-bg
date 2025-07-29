@@ -1,6 +1,5 @@
 use std::{
 	array,
-	f32::consts::PI,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	ops::Neg,
 };
@@ -13,6 +12,7 @@ use bevy::{
 	},
 	window::PrimaryWindow,
 };
+use bevy_light_2d::prelude::{LightOccluder2d, LightOccluder2dShape};
 use image::{RgbaImage, imageops, load_from_memory};
 
 use self::Direction::{Bottom, Left, Right, Top};
@@ -33,10 +33,8 @@ pub struct Maze {
 	width: u32,
 	height: u32,
 	pub tiles: Box<[Tile]>,
-	textures: Box<[Handle<StandardMaterial>; 256]>,
-	wall_mesh: Handle<Mesh>,
+	textures: Box<[Handle<ColorMaterial>; 256]>,
 	floor_mesh: Handle<Mesh>,
-	wall_material: Handle<StandardMaterial>,
 }
 
 impl Maze {
@@ -49,10 +47,8 @@ impl Maze {
 		maze: impl Into<Box<[Tile]>>,
 		width: u32,
 		height: u32,
-		textures: Box<[Handle<StandardMaterial>; 256]>,
-		wall_mesh: Handle<Mesh>,
+		textures: Box<[Handle<ColorMaterial>; 256]>,
 		floor_mesh: Handle<Mesh>,
-		wall_material: Handle<StandardMaterial>,
 	) -> Self {
 		let tiles = maze.into();
 
@@ -67,9 +63,7 @@ impl Maze {
 			height,
 			tiles,
 			textures,
-			wall_mesh,
 			floor_mesh,
-			wall_material,
 		}
 	}
 
@@ -111,8 +105,8 @@ impl Maze {
 				tile,
 				TilePos { x, y },
 				(
-					Mesh3d(self.floor_mesh.clone()),
-					MeshMaterial3d(self.textures[ti as usize].clone()),
+					Mesh2d(self.floor_mesh.clone()),
+					MeshMaterial2d(self.textures[ti as usize].clone()),
 					Transform {
 						translation: Vec3 {
 							x: loc.x,
@@ -147,8 +141,15 @@ impl Maze {
 	fn spawn_tile_walls(&self, builder: &mut ChildSpawnerCommands, tile: Tile) {
 		if tile.is_closed(Top) {
 			builder.spawn((
-				Mesh3d(self.wall_mesh.clone()),
-				MeshMaterial3d(self.wall_material.clone()),
+				LightOccluder2d {
+					shape: LightOccluder2dShape::Rectangle {
+						half_size: Vec2 {
+							x: TILE_SIZE.x * TILE_SCALE
+								+ SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
+							y: SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
+						} / 2.0,
+					},
+				},
 				Transform {
 					translation: Vec3 {
 						x: 0.0,
@@ -162,8 +163,15 @@ impl Maze {
 
 		if tile.is_closed(Bottom) {
 			builder.spawn((
-				Mesh3d(self.wall_mesh.clone()),
-				MeshMaterial3d(self.wall_material.clone()),
+				LightOccluder2d {
+					shape: LightOccluder2dShape::Rectangle {
+						half_size: Vec2 {
+							x: TILE_SIZE.x * TILE_SCALE
+								+ SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
+							y: SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
+						} / 2.0,
+					},
+				},
 				Transform {
 					translation: Vec3 {
 						x: 0.0,
@@ -177,15 +185,21 @@ impl Maze {
 
 		if tile.is_closed(Right) {
 			builder.spawn((
-				Mesh3d(self.wall_mesh.clone()),
-				MeshMaterial3d(self.wall_material.clone()),
+				LightOccluder2d {
+					shape: LightOccluder2dShape::Rectangle {
+						half_size: Vec2 {
+							x: SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
+							y: TILE_SIZE.y * TILE_SCALE
+								+ SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
+						} / 2.0,
+					},
+				},
 				Transform {
 					translation: Vec3 {
 						x: TILE_SIZE.x / 2.0,
 						y: 0.0,
 						z: 0.0,
 					},
-					rotation: Quat::from_rotation_z(PI / 2.0),
 					..default()
 				},
 			));
@@ -193,15 +207,21 @@ impl Maze {
 
 		if tile.is_closed(Left) {
 			builder.spawn((
-				Mesh3d(self.wall_mesh.clone()),
-				MeshMaterial3d(self.wall_material.clone()),
+				LightOccluder2d {
+					shape: LightOccluder2dShape::Rectangle {
+						half_size: Vec2 {
+							x: SUBTILE_SIZE.x * SUBTILE_SCALE * TILE_SCALE,
+							y: TILE_SIZE.y * TILE_SCALE
+								+ SUBTILE_SIZE.y * SUBTILE_SCALE * TILE_SCALE,
+						} / 2.0,
+					},
+				},
 				Transform {
 					translation: Vec3 {
 						x: -TILE_SIZE.x / 2.0,
 						y: 0.0,
 						z: 0.0,
 					},
-					rotation: Quat::from_rotation_z(PI / 2.0),
 					..default()
 				},
 			));
@@ -384,7 +404,7 @@ pub fn initialize(
 	mut commands: Commands,
 	rng: Res<Rand>,
 	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<StandardMaterial>>,
+	mut materials: ResMut<Assets<ColorMaterial>>,
 	mut images: ResMut<Assets<Image>>,
 ) {
 	let wall = [&include_bytes!("../../assets/maze/cave-wall.png")[..]];
@@ -394,30 +414,11 @@ pub fn initialize(
 	];
 
 	let floor_mesh = meshes.add(Rectangle::from_size(TILE_SIZE));
-	let wall_mesh = meshes.add(Cuboid::new(
-		SUBTILE_SIZE.x.mul_add(SUBTILE_SCALE, TILE_SIZE.x),
-		SUBTILE_SIZE.y * SUBTILE_SCALE,
-		10.0,
-	));
-
-	let wall_material = materials.add(StandardMaterial {
-		base_color: Color::WHITE,
-		emissive: LinearRgba::NONE,
-		reflectance: 1.0,
-		unlit: true,
-		fog_enabled: false,
-		..default()
-	});
 
 	let textures = gen_tile_textures(&wall, &floor, &mut images, &rng).map(|h| {
-		materials.add(StandardMaterial {
-			base_color: css::GRAY.into(),
-			base_color_texture: Some(h.clone()),
-			reflectance: rng.f32().mul_add(0.1, 0.1),
-			perceptual_roughness: rng.f32().mul_add(0.15, 0.85),
-			emissive: (Color::hsl(210.0, 0.3, 0.3).to_linear() * 18.0).with_alpha(1.0),
-			emissive_texture: Some(h),
-			unlit: false,
+		materials.add(ColorMaterial {
+			color: css::GRAY.into(),
+			texture: Some(h),
 			..default()
 		})
 	});
@@ -429,9 +430,7 @@ pub fn initialize(
 		MAZE_SIZE.x,
 		MAZE_SIZE.y,
 		Box::new(textures),
-		wall_mesh,
 		floor_mesh,
-		wall_material,
 	);
 
 	commands.insert_resource(maze);

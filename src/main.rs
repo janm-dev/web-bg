@@ -23,6 +23,7 @@ use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
 #[cfg(feature = "debug")]
 use bevy_debug_text_overlay::OverlayPlugin;
 use bevy_embedded_assets::{EmbeddedAssetPlugin, PluginMode};
+use bevy_light_2d::plugin::Light2dPlugin;
 #[cfg(feature = "debug")]
 use bevy_screen_diagnostics::{
 	ScreenDiagnosticsPlugin, ScreenEntityDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin,
@@ -137,6 +138,7 @@ pub fn main() {
 		.add_before::<AssetPlugin>(EmbeddedAssetPlugin {
 			mode: PluginMode::ReplaceDefault,
 		})
+		.add(Light2dPlugin)
 		.disable::<LogPlugin>();
 
 	app.insert_resource(ClearColor(Color::NONE))

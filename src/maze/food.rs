@@ -63,6 +63,7 @@ pub fn spawn(
 		},
 		Transform {
 			scale: Vec3::splat(FOOD_SCALE),
+			translation: Vec3::Z,
 			..default()
 		},
 	));

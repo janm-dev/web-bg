@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use bevy::{color::palettes::css, prelude::*};
+use bevy_light_2d::light::PointLight2d;
 
 use super::{PlayerInput, maze, maze::Tile};
 use crate::util::{Rand, TurboRand};
@@ -13,7 +14,9 @@ const TILE_FRAME_TIME_SECONDS: f32 = 0.1;
 
 const MOVEMENT_SPEED: f32 = 150.0;
 
-const LIGHT_INITIAL_INTENSITY: f32 = 50_000_000_000.0;
+const LIGHT_INITIAL_INTENSITY: f32 = 8.0;
+const LIGHT_RADIUS: f32 = 1000.0;
+const LIGHT_FALLOFF: f32 = 4.0;
 
 #[derive(Debug, Component)]
 pub struct Player {
@@ -79,12 +82,12 @@ pub fn initialize(
 		))
 		.with_children(|builder| {
 			builder.spawn((
-				PointLight {
+				PointLight2d {
+					cast_shadows: true,
 					color: css::ORANGE.into(),
 					intensity: LIGHT_INITIAL_INTENSITY,
-					range: 1000.0,
-					shadows_enabled: true,
-					..default()
+					radius: LIGHT_RADIUS,
+					falloff: LIGHT_FALLOFF,
 				},
 				Transform {
 					translation: Vec3 {
@@ -128,7 +131,7 @@ pub struct FlickerTimer(Timer);
 pub fn light_flicker(
 	time: Res<Time>,
 	rng: Res<Rand>,
-	mut query: Query<(&mut PointLight, &mut FlickerTimer)>,
+	mut query: Query<(&mut PointLight2d, &mut FlickerTimer)>,
 ) {
 	for (mut light, mut timer) in &mut query {
 		timer.tick(time.delta());

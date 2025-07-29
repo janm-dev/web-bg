@@ -1,6 +1,7 @@
 //! A randomly generated maze/cave.
 
-use bevy::{prelude::*, render::camera::ClearColorConfig, window::PrimaryWindow};
+use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_light_2d::light::{AmbientLight2d, Light2d};
 
 use crate::util::{PlayerInput, input};
 
@@ -42,31 +43,14 @@ pub fn start(app: &mut App) {
 
 fn camera_initialization(mut commands: Commands) {
 	commands.spawn((
-		Camera {
-			order: 1,
-			clear_color: ClearColorConfig::None,
-			..default()
-		},
 		Camera2d,
-		InheritedVisibility::default(),
-		ViewVisibility::default(),
-	));
-
-	commands.spawn((
-		Camera {
-			order: 0,
-			..default()
-		},
-		Camera3d::default(),
-		Projection::Orthographic(OrthographicProjection::default_3d()),
-		Transform {
-			translation: Vec3 {
-				x: 0.0,
-				y: 0.0,
-				z: 1.0,
+		Light2d {
+			ambient_light: AmbientLight2d {
+				color: Color::hsl(210.0, 0.3, 0.3),
+				brightness: 5.0,
 			},
-			..default()
 		},
+		Camera::default(),
 		InheritedVisibility::default(),
 		ViewVisibility::default(),
 	));
