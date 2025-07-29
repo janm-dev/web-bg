@@ -19,11 +19,7 @@ default = [
 	"racecar",
 ]
 dynamic = ["bevy/dynamic_linking"]
-debug = [
-	"dep:tracing",
-
-	"dep:bevy_screen_diagnostics",
-]
+debug = ["dep:tracing", "dep:bevy_screen_diagnostics"]
 profile = [
 	"debug",
 	"bevy/trace",
@@ -76,6 +72,7 @@ web-sys = { version = "0.3.72", features = [
 	"CustomEvent",
 	"CustomEventInit",
 ] }
+web-time = "1.1.0"
 
 [target.'cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))'.dependencies]
 rlsf = "0.2.1"

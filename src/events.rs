@@ -1,9 +1,11 @@
 //! `web-bg`-generated JavaScript events
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 	sync::{Once, OnceLock},
-	time::{Duration, Instant},
+	time::Duration,
 };
 
 use bevy::prelude::*;
@@ -11,6 +13,8 @@ use bevy::prelude::*;
 use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use web_sys::{CustomEvent, CustomEventInit, Event};
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 
 static STARTUP_TIME: OnceLock<Instant> = OnceLock::new();
 
