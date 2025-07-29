@@ -119,9 +119,6 @@ pub fn main() {
 	let default_plugins = DefaultPlugins
 		.set(WindowPlugin {
 			primary_window: Some(Window {
-				#[cfg(target_arch = "wasm32")]
-				mode: WindowMode::Windowed,
-				#[cfg(not(target_arch = "wasm32"))]
 				mode: WindowMode::BorderlessFullscreen(MonitorSelection::Current),
 				resizable: true,
 				canvas: cfg!(target_arch = "wasm32").then(|| "#background".to_string()),
