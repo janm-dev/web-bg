@@ -5,7 +5,6 @@ use std::{
 };
 
 use bevy::{
-	color::palettes::css,
 	prelude::*,
 	render::render_resource::{
 		Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
@@ -33,8 +32,7 @@ pub struct Maze {
 	width: u32,
 	height: u32,
 	pub tiles: Box<[Tile]>,
-	textures: Box<[Handle<ColorMaterial>; 256]>,
-	floor_mesh: Handle<Mesh>,
+	textures: Box<[Handle<Image>; 256]>,
 }
 
 impl Maze {
@@ -42,13 +40,11 @@ impl Maze {
 	///
 	/// # Panic
 	/// Panics if the maze is not `width * height` tiles large
-	#[allow(clippy::too_many_arguments)]
 	pub fn new(
 		maze: impl Into<Box<[Tile]>>,
 		width: u32,
 		height: u32,
-		textures: Box<[Handle<ColorMaterial>; 256]>,
-		floor_mesh: Handle<Mesh>,
+		textures: Box<[Handle<Image>; 256]>,
 	) -> Self {
 		let tiles = maze.into();
 
@@ -63,7 +59,6 @@ impl Maze {
 			height,
 			tiles,
 			textures,
-			floor_mesh,
 		}
 	}
 
@@ -104,19 +99,20 @@ impl Maze {
 			.spawn((
 				tile,
 				TilePos { x, y },
-				(
-					Mesh2d(self.floor_mesh.clone()),
-					MeshMaterial2d(self.textures[ti as usize].clone()),
-					Transform {
-						translation: Vec3 {
-							x: loc.x,
-							y: loc.y,
-							..default()
-						},
-						scale: Vec3::splat(TILE_SCALE),
+				Sprite {
+					image: self.textures[ti as usize].clone(),
+					custom_size: Some(TILE_SIZE),
+					..default()
+				},
+				Transform {
+					translation: Vec3 {
+						x: loc.x,
+						y: loc.y,
 						..default()
 					},
-				),
+					scale: Vec3::splat(TILE_SCALE),
+					..default()
+				},
 			))
 			.with_children(|builder| {
 				let is_fully_open = tile.is_open(Top)
@@ -404,38 +400,18 @@ impl Default for Tile {
 }
 
 #[cfg_attr(feature = "debug", tracing::instrument(skip_all))]
-pub fn initialize(
-	mut commands: Commands,
-	rng: Res<Rand>,
-	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<ColorMaterial>>,
-	mut images: ResMut<Assets<Image>>,
-) {
+pub fn initialize(mut commands: Commands, rng: Res<Rand>, mut images: ResMut<Assets<Image>>) {
 	let wall = [&include_bytes!("../../assets/maze/cave-wall.png")[..]];
 	let floor = [
 		&include_bytes!("../../assets/maze/cave-floor-1.png")[..],
 		&include_bytes!("../../assets/maze/cave-floor-2.png")[..],
 	];
 
-	let floor_mesh = meshes.add(Rectangle::from_size(TILE_SIZE));
-
-	let textures = gen_tile_textures(&wall, &floor, &mut images, &rng).map(|h| {
-		materials.add(ColorMaterial {
-			color: css::GRAY.into(),
-			texture: Some(h),
-			..default()
-		})
-	});
+	let textures = gen_tile_textures(&wall, &floor, &mut images, &rng);
 
 	let maze = gen_maze(&rng);
 
-	let maze = Maze::new(
-		maze,
-		MAZE_SIZE.x,
-		MAZE_SIZE.y,
-		Box::new(textures),
-		floor_mesh,
-	);
+	let maze = Maze::new(maze, MAZE_SIZE.x, MAZE_SIZE.y, Box::new(textures));
 
 	commands.insert_resource(maze);
 }

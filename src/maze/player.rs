@@ -14,9 +14,9 @@ const TILE_FRAME_TIME_SECONDS: f32 = 0.1;
 
 const MOVEMENT_SPEED: f32 = 150.0;
 
-const LIGHT_INITIAL_INTENSITY: f32 = 8.0;
+const LIGHT_INITIAL_INTENSITY: f32 = 5.0;
 const LIGHT_RADIUS: f32 = 1000.0;
-const LIGHT_FALLOFF: f32 = 4.0;
+const LIGHT_FALLOFF: f32 = 2.0;
 
 #[derive(Debug, Component)]
 pub struct Player {

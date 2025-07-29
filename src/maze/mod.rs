@@ -47,7 +47,7 @@ fn camera_initialization(mut commands: Commands) {
 		Light2d {
 			ambient_light: AmbientLight2d {
 				color: Color::hsl(210.0, 0.3, 0.3),
-				brightness: 5.0,
+				brightness: 1.0,
 			},
 		},
 		Camera::default(),
