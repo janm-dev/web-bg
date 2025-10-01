@@ -43,7 +43,7 @@ portoom = []
 racecar = []
 
 [dependencies]
-bevy = "0.16.1"
+bevy = "0.17.1"
 bevy_embedded_assets = "0.13.0"
 bevy_light_2d = "0.7.0"
 bevy_screen_diagnostics = { version = "0.8.1", optional = true }
