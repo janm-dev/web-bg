@@ -58,7 +58,7 @@ turborand = { version = "0.10.1", features = ["atomic"] }
 getrandom = { version = "0.3.4", features = ["wasm_js"] }
 instant = { version = "0.1", features = ["wasm-bindgen"] }
 tracing-core = { version = "0.1.35", optional = true }
-tracing-subscriber = { version = "0.3.20", features = [
+tracing-subscriber = { version = "0.3.22", features = [
 	"registry",
 ], optional = true }
 tracing-web = { version = "0.1.3", optional = true }
